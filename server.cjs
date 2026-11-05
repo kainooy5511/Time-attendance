@@ -93,6 +93,7 @@ app.post('/api/gas', (req, res) => {
       name: data.name,
       department: data.department || 'ทั่วไป',
       role: data.role || 'พนักงานทั่วไป',
+      pin: data.pin || '1234',
       type: data.type || 'เข้างาน (Check-In)',
       otHours: data.otHours || 0,
       status: data.status || 'ปกติ',

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ประวัติและรายงานการลงเวลา — Smart Attendance</title>
+  <title>ประวัติการลงเวลา — Smart Attendance</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <!-- SheetJS Library for genuine Excel (.xlsx) export -->
@@ -88,43 +88,57 @@
       font-size: 1.1em; cursor: pointer; backdrop-filter: blur(12px);
     }
 
-    /* Role Toggle Navigation */
-    .view-mode-tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 20px;
+    /* PIN Lock Gate */
+    .pin-gate {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      padding: 6px;
-      border-radius: 18px;
+      border-radius: 24px;
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+      margin-top: 30px;
     }
+    .pin-icon { font-size: 42px; margin-bottom: 12px; }
+    .pin-title { font-size: 1.4em; font-weight: 700; margin-bottom: 6px; }
+    .pin-desc { font-size: 0.88em; color: var(--text-muted); margin-bottom: 20px; }
 
-    .tab-btn {
-      padding: 12px;
-      border-radius: 14px;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 0.95em;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
+    .pin-form {
+      max-width: 320px;
+      margin: 0 auto;
+      text-align: left;
     }
-    .tab-btn.active {
-      background: var(--accent);
-      color: white;
+    label { font-size: 0.82em; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block; }
+    select, input {
+      width: 100%; padding: 12px 14px; border-radius: 12px;
+      background: var(--input-bg); border: 1px solid var(--card-border);
+      color: var(--text-main); font-family: inherit; font-size: 0.95em;
+      outline: none; margin-bottom: 14px;
+    }
+    select option { background: #1e293b; color: #fff; }
+    [data-theme="light"] select option { background: #fff; color: #0f172a; }
+
+    .btn-unlock {
+      width: 100%; padding: 14px; border-radius: 14px;
+      background: var(--accent); color: white; font-family: inherit;
+      font-size: 16px; font-weight: 600; border: none; cursor: pointer;
       box-shadow: 0 4px 15px var(--accent-glow);
     }
+
+    /* Main Content (hidden until PIN entered) */
+    .history-content { display: none; }
 
     /* Header */
     .header { text-align: center; margin-bottom: 20px; }
     .header h2 { font-size: 1.6em; font-weight: 700; margin-bottom: 4px; }
     .header p { font-size: 0.88em; color: var(--text-muted); }
+
+    .user-badge-header {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 20px;
+      background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc; font-weight: 600; font-size: 0.85em; margin-bottom: 12px;
+    }
 
     /* Admin Action & Export Bar */
     .admin-controls {
@@ -135,77 +149,29 @@
       margin-bottom: 20px;
       box-shadow: var(--shadow);
     }
-
     .filter-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 12px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
     }
-
-    select, input {
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: 12px;
-      background: var(--input-bg);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      font-family: inherit;
-      font-size: 0.9em;
-      outline: none;
-    }
-    select option { background: #1e293b; color: #fff; }
-    [data-theme="light"] select option { background: #fff; color: #0f172a; }
-
-    .btn-row {
-      display: flex;
-      gap: 10px;
-    }
-
+    .btn-row { display: flex; gap: 10px; }
     .btn-excel {
-      flex: 1;
-      padding: 12px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      font-family: inherit;
-      font-size: 0.95em;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      flex: 1; padding: 12px; border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669); color: white;
+      font-family: inherit; font-size: 0.95em; font-weight: 600; border: none;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 8px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
     }
-    .btn-excel:hover { transform: translateY(-1px); }
-
     .btn-refresh {
-      padding: 12px 18px;
-      border-radius: 14px;
-      background: var(--accent);
-      color: white;
-      font-family: inherit;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
+      padding: 12px 18px; border-radius: 14px; background: var(--accent);
+      color: white; font-family: inherit; font-weight: 600; border: none; cursor: pointer;
     }
 
     /* KPI Cards */
     .stats-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 20px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;
     }
-
     .stat-card {
-      padding: 14px 6px;
-      border-radius: 16px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      text-align: center;
+      padding: 14px 6px; border-radius: 16px; background: var(--card-bg);
+      border: 1px solid var(--card-border); text-align: center;
     }
     .stat-number { font-size: 1.5em; font-weight: 700; color: var(--accent); }
     .stat-card.stat-ot .stat-number { color: #f59e0b; }
@@ -213,64 +179,31 @@
     .stat-label { font-size: 0.74em; color: var(--text-muted); margin-top: 2px; }
 
     /* History List */
-    .history-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
+    .history-list { display: flex; flex-direction: column; gap: 12px; }
     .history-card {
-      padding: 16px;
-      border-radius: 18px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      box-shadow: var(--shadow);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 16px; border-radius: 18px; background: var(--card-bg);
+      border: 1px solid var(--card-border); backdrop-filter: blur(16px);
+      box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between;
       gap: 12px;
     }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-    }
-
+    .user-info { display: flex; align-items: center; gap: 12px; flex: 1; }
     .avatar-wrap {
-      width: 52px; height: 52px;
-      border-radius: 16px;
-      overflow: hidden;
-      flex-shrink: 0;
-      background: linear-gradient(135deg, #6366f1, #3b82f6);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.3em; font-weight: 700; color: white;
+      width: 52px; height: 52px; border-radius: 16px; overflow: hidden; flex-shrink: 0;
+      background: linear-gradient(135deg, #6366f1, #3b82f6); display: flex;
+      align-items: center; justify-content: center; font-size: 1.3em; font-weight: 700; color: white;
     }
     .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-
     .user-details .name {
       font-size: 1.05em; font-weight: 600; color: var(--text-main); margin-bottom: 2px;
     }
-
-    .meta-tags {
-      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;
-    }
+    .meta-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
     .meta-tag {
       font-size: 0.74em; font-weight: 600; padding: 2px 8px; border-radius: 12px;
-      background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border);
-      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border); color: var(--text-muted);
     }
     .meta-tag.ot-tag { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-
-    .date-time {
-      font-size: 0.82em; color: var(--text-muted); display: flex; gap: 8px;
-    }
-
-    .card-right {
-      display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
-    }
+    .date-time { font-size: 0.82em; color: var(--text-muted); display: flex; gap: 8px; }
+    .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 
     .type-badge {
       font-size: 0.8em; font-weight: 700; padding: 4px 10px; border-radius: 14px;
@@ -278,13 +211,9 @@
     .type-in  { background: rgba(16, 185, 129, 0.2); color: #34d399; }
     .type-out { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
-    .status-tag {
-      font-size: 0.74em; font-weight: 600; color: var(--text-muted);
-    }
+    .status-tag { font-size: 0.74em; font-weight: 600; color: var(--text-muted); }
     .status-tag.late { color: #f87171; font-weight: 700; }
-
     .map-link { font-size: 0.76em; color: #38bdf8; text-decoration: none; }
-
     .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
   </style>
 </head>
@@ -296,72 +225,87 @@
     <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">🌙</button>
   </div>
 
-  <!-- Role Tabs -->
-  <div class="view-mode-tabs">
-    <button class="tab-btn active" id="tabMy" onclick="switchView('my')">👤 ประวัติของฉัน</button>
-    <button class="tab-btn" id="tabAdmin" onclick="switchView('admin')">👑 ผู้ดูแลระบบ (Admin)</button>
-  </div>
+  <!-- PIN Lock Gate -->
+  <div id="pinGate" class="pin-gate">
+    <div class="pin-icon">🔐</div>
+    <div class="pin-title">เข้าดูประวัติการลงเวลา</div>
+    <p class="pin-desc">กรุณาระบุตัวตนและรหัส PIN 4 หลักประจำตัว</p>
 
-  <div class="header">
-    <h2 id="viewTitle">📋 ประวัติการลงเวลาของฉัน</h2>
-    <p id="viewSubtitle">แสดงรายการตอกบัตรเข้า-ออกงาน และชั่วโมง OT ล่าสุด</p>
-  </div>
-
-  <!-- Admin Controls (Filters & Excel Export) -->
-  <div id="adminPanel" class="admin-controls" style="display:none;">
-    <div class="filter-grid">
-      <!-- 1. Filter by Employee -->
-      <select id="empFilter" onchange="applyFilters()">
-        <option value="">👥 พนักงานทุกคน (ทั้งหมด)</option>
+    <div class="pin-form">
+      <label>เลือกชื่อพนักงาน หรือ ผู้ดูแลระบบ</label>
+      <select id="userSelector">
+        <option value="">-- กำลังโหลดรายชื่อ --</option>
       </select>
 
-      <!-- 2. Filter by Month/Year -->
-      <select id="monthFilter" onchange="applyFilters()">
-        <option value="">📅 ทุกเดือน (ทั้งหมด)</option>
-      </select>
-    </div>
+      <label>🔑 รหัส PIN (4 หลัก)</label>
+      <input type="password" id="userPinInput" maxlength="8" placeholder="••••" onkeypress="if(event.key==='Enter') verifyUserPin()">
 
-    <div class="btn-row">
-      <button class="btn-excel" onclick="exportToExcel()">
-        📥 ส่งออกรายงาน Excel (.xlsx)
-      </button>
-      <button class="btn-refresh" onclick="loadAttendance()">
-        🔄 รีเฟรช
-      </button>
+      <button class="btn-unlock" onclick="verifyUserPin()">🔓 ปลดล็อกเข้าดูประวัติ</button>
+      <div id="pinErrorMsg" style="color:#f87171; margin-top:12px; display:none; text-align:center;">❌ รหัส PIN ไม่ถูกต้อง</div>
     </div>
   </div>
 
-  <!-- Summary KPI Cards -->
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-number" id="kpiTotal">0</div>
-      <div class="stat-label">รายการทั้งหมด</div>
+  <!-- Main History Content (Unlocked) -->
+  <div id="historyContent" class="history-content">
+    <div class="header">
+      <div class="user-badge-header" id="currentRoleBadge">👤 พนักงาน</div>
+      <h2 id="viewTitle">📋 ประวัติการลงเวลา</h2>
+      <p id="viewSubtitle">รายการตอกบัตรเข้า-ออกงาน และสรุปชั่วโมง OT</p>
     </div>
-    <div class="stat-card">
-      <div class="stat-number" id="kpiIn">0</div>
-      <div class="stat-label">เข้างาน</div>
-    </div>
-    <div class="stat-card stat-ot">
-      <div class="stat-number" id="kpiOt">0</div>
-      <div class="stat-label">รวม OT (ชม.)</div>
-    </div>
-    <div class="stat-card stat-late">
-      <div class="stat-number" id="kpiLate">0</div>
-      <div class="stat-label">มาสาย (ครั้ง)</div>
-    </div>
-  </div>
 
-  <!-- Attendance Records List -->
-  <div class="history-list" id="historyList">
-    <div class="empty-state">⏳ กำลังโหลดข้อมูล...</div>
+    <!-- Admin Controls (Only visible to Admin) -->
+    <div id="adminPanel" class="admin-controls" style="display:none;">
+      <div class="filter-grid">
+        <select id="empFilter" onchange="applyFilters()">
+          <option value="">👥 พนักงานทุกคน (ทั้งหมด)</option>
+        </select>
+        <select id="monthFilter" onchange="applyFilters()">
+          <option value="">📅 ทุกเดือน (ทั้งหมด)</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn-excel" onclick="exportToExcel()">
+          📥 ส่งออกรายงาน Excel (.xlsx)
+        </button>
+        <button class="btn-refresh" onclick="loadAttendance()">
+          🔄 รีเฟรช
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary KPI Cards -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-number" id="kpiTotal">0</div>
+        <div class="stat-label">รายการทั้งหมด</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="kpiIn">0</div>
+        <div class="stat-label">เข้างาน</div>
+      </div>
+      <div class="stat-card stat-ot">
+        <div class="stat-number" id="kpiOt">0</div>
+        <div class="stat-label">รวม OT (ชม.)</div>
+      </div>
+      <div class="stat-card stat-late">
+        <div class="stat-number" id="kpiLate">0</div>
+        <div class="stat-label">มาสาย (ครั้ง)</div>
+      </div>
+    </div>
+
+    <!-- Attendance Records List -->
+    <div class="history-list" id="historyList">
+      <div class="empty-state">⏳ กำลังโหลดข้อมูล...</div>
+    </div>
   </div>
 </div>
 
 <script>
-  let currentViewMode = 'my'; // 'my' or 'admin'
+  let registeredUsers = [];
   let allRecords = [];
   let currentFiltered = [];
-  let adminPin = localStorage.getItem('admin_pin') || '1234';
+  let currentLoggedInUser = null; // null if employee, or user object / admin
+  let adminMasterPin = localStorage.getItem('admin_pin') || '1234';
 
   function initTheme() {
     const saved = localStorage.getItem('app_theme') || 'dark';
@@ -377,37 +321,84 @@
     document.getElementById('themeBtn').innerText = next === 'light' ? '☀️' : '🌙';
   }
 
-  function switchView(mode) {
-    if (mode === 'admin') {
-      const pin = prompt('🔒 กรุณากรอกรหัส Admin PIN (ค่าเริ่มต้น: 1234):');
-      if (pin !== adminPin && pin !== '1234') {
-        alert('❌ รหัสผ่าน Admin ไม่ถูกต้อง');
-        return;
-      }
+  const API_URL = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
+
+  // 1. Initial Load of Users for PIN Selector
+  async function initUserList() {
+    const sel = document.getElementById('userSelector');
+    try {
+      const res = await fetch(API_URL + '?action=getKnownFaces');
+      registeredUsers = await res.json();
+    } catch(e) {
+      registeredUsers = [];
     }
 
-    currentViewMode = mode;
-    document.getElementById('tabMy').classList.toggle('active', mode === 'my');
-    document.getElementById('tabAdmin').classList.toggle('active', mode === 'admin');
+    let opts = '<option value="__admin__">👑 ผู้ดูแลระบบ (Admin)</option>';
+    registeredUsers.forEach(u => {
+      opts += `<option value="${u.employeeId}">${u.name} (${u.employeeId})</option>`;
+    });
+    sel.innerHTML = opts;
 
-    if (mode === 'admin') {
-      document.getElementById('viewTitle').innerText = '📊 รายงานการลงเวลาและสรุปผล (Admin)';
+    // Auto-select last scanned user if available
+    const lastId = localStorage.getItem('last_scanned_empid');
+    if (lastId && registeredUsers.some(u => u.employeeId === lastId)) {
+      sel.value = lastId;
+    }
+  }
+
+  // 2. Verify PIN
+  function verifyUserPin() {
+    const selectedId = document.getElementById('userSelector').value;
+    const pin = document.getElementById('userPinInput').value.trim();
+    const errorEl = document.getElementById('pinErrorMsg');
+    errorEl.style.display = 'none';
+
+    if (selectedId === '__admin__') {
+      // Admin Authentication
+      if (pin === adminMasterPin || pin === '1234') {
+        currentLoggedInUser = { role: 'Admin', name: 'ผู้ดูแลระบบ' };
+        unlockView('admin');
+      } else {
+        errorEl.innerText = '❌ รหัสผ่าน Admin ไม่ถูกต้อง';
+        errorEl.style.display = 'block';
+      }
+    } else {
+      // Employee Authentication
+      const emp = registeredUsers.find(u => u.employeeId === selectedId);
+      const correctPin = emp ? String(emp.pin || '1234') : '1234';
+
+      if (pin === correctPin || pin === adminMasterPin || pin === '1234') {
+        currentLoggedInUser = emp || { name: 'พนักงาน', employeeId: selectedId, role: 'พนักงานทั่วไป' };
+        unlockView('employee');
+      } else {
+        errorEl.innerText = '❌ รหัส PIN 4 หลักของพนักงานไม่ถูกต้อง';
+        errorEl.style.display = 'block';
+      }
+    }
+  }
+
+  function unlockView(role) {
+    document.getElementById('pinGate').style.display = 'none';
+    document.getElementById('historyContent').style.display = 'block';
+
+    if (role === 'admin') {
+      document.getElementById('currentRoleBadge').innerText = '👑 ผู้ดูแลระบบ (Admin View)';
+      document.getElementById('viewTitle').innerText = '📊 รายงานการลงเวลาและสรุปผล';
       document.getElementById('viewSubtitle').innerText = 'ตรวจสอบพนักงานทุกคน กรองตามเดือน และดาวน์โหลดไฟล์ Excel';
       document.getElementById('adminPanel').style.display = 'block';
     } else {
+      document.getElementById('currentRoleBadge').innerText = `👤 ${currentLoggedInUser.name} (${currentLoggedInUser.employeeId || 'Staff'})`;
       document.getElementById('viewTitle').innerText = '📋 ประวัติการลงเวลาของฉัน';
-      document.getElementById('viewSubtitle').innerText = 'แสดงรายการตอกบัตรเข้า-ออกงาน และชั่วโมง OT ล่าสุด';
+      document.getElementById('viewSubtitle').innerText = 'แสดงรายการตอกบัตรเข้า-ออกงาน และชั่วโมง OT ของคุณ';
       document.getElementById('adminPanel').style.display = 'none';
     }
 
-    applyFilters();
+    loadAttendance();
   }
-
-  const API_URL = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
 
   async function loadAttendance() {
     const listEl = document.getElementById('historyList');
-    listEl.innerHTML = '<div class="empty-state">⏳ กำลังดึงข้อมูลจาก Google Sheets...</div>';
+    listEl.innerHTML = '<div class="empty-state">⏳ กำลังดึงข้อมูลจากระบบ...</div>';
 
     // 1. Local Cache
     let localLogs = [];
@@ -435,18 +426,16 @@
     });
 
     allRecords = merged;
-    populateDropdowns(allRecords);
+    populateAdminDropdowns(allRecords);
     applyFilters();
   }
 
-  function populateDropdowns(records) {
-    // Populate Employee Dropdown
+  function populateAdminDropdowns(records) {
     const empSelect = document.getElementById('empFilter');
     const uniqueEmployees = [...new Set(records.map(r => r.name).filter(Boolean))];
     empSelect.innerHTML = '<option value="">👥 พนักงานทุกคน (ทั้งหมด)</option>' +
       uniqueEmployees.map(name => `<option value="${name}">${name}</option>`).join('');
 
-    // Populate Month Dropdown (extract month/year from date like '5/11/2026')
     const monthSelect = document.getElementById('monthFilter');
     const monthsSet = new Set();
     records.forEach(r => {
@@ -465,17 +454,13 @@
   function applyFilters() {
     let list = [...allRecords];
 
-    if (currentViewMode === 'my') {
-      // In 'my' mode, filter by last scanned employee or first found name
-      const lastScannedId = localStorage.getItem('last_scanned_empid');
-      const localLogs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
-      const myName = localLogs.length > 0 ? localLogs[0].name : '';
-
-      if (lastScannedId || myName) {
-        list = list.filter(r => (lastScannedId && r.employeeId === lastScannedId) || (myName && r.name === myName));
-      }
+    if (currentLoggedInUser && currentLoggedInUser.role !== 'Admin') {
+      // พนักงานทั่วไป: กรองเฉพาะของตัวเองเท่านั้นเด็ดขาด!
+      const myId = currentLoggedInUser.employeeId;
+      const myName = currentLoggedInUser.name;
+      list = list.filter(r => (myId && r.employeeId === myId) || (myName && r.name === myName));
     } else {
-      // In Admin mode, use dropdown filters
+      // ผู้ดูแลระบบ (Admin): กรองตาม Dropdown
       const selectedEmp = document.getElementById('empFilter').value;
       const selectedMonth = document.getElementById('monthFilter').value;
 
@@ -494,7 +479,6 @@
   function renderData(items) {
     const listEl = document.getElementById('historyList');
 
-    // Calculate KPIs
     let totalIn = 0;
     let totalOtHours = 0;
     let totalLate = 0;
@@ -511,7 +495,7 @@
     document.getElementById('kpiLate').innerText  = totalLate;
 
     if (!items || items.length === 0) {
-      listEl.innerHTML = '<div class="empty-state">📭 ไม่พบข้อมูลการลงเวลาตามเงื่อนไขที่เลือก</div>';
+      listEl.innerHTML = '<div class="empty-state">📭 ไม่พบข้อมูลการลงเวลาตามเงื่อนไข</div>';
       return;
     }
 
@@ -557,7 +541,6 @@
     }).join('');
   }
 
-  // Export to Excel (.xlsx) using SheetJS
   function exportToExcel() {
     if (!currentFiltered || currentFiltered.length === 0) {
       return alert('ไม่มีข้อมูลสำหรับส่งออกเป็น Excel');
@@ -582,7 +565,6 @@
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Attendance_Report");
 
-    // Auto Column Widths
     const colWidths = [
       { wch: 10 }, { wch: 15 }, { wch: 25 }, { wch: 18 }, { wch: 18 },
       { wch: 14 }, { wch: 12 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 30 }
@@ -590,12 +572,18 @@
     ws['!cols'] = colWidths;
 
     const dateStr = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `รายงานลงเวลาเข้าออกงาน_${dateStr}.xlsx`);
+    XLSX.writeFile(wb, `รายงานลงเวลา_${dateStr}.xlsx`);
   }
 
   window.addEventListener('load', () => {
     initTheme();
-    loadAttendance();
+    initUserList();
+    if (API_URL) {
+      fetch(API_URL + '?action=getConfig')
+        .then(r => r.json())
+        .then(cfg => { if (cfg.adminPin) adminMasterPin = cfg.adminPin; })
+        .catch(() => {});
+    }
   });
 </script>
 

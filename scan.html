@@ -179,12 +179,12 @@
     }
     .btn-start:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(16, 185, 129, 0.6); }
 
-    /* Modal */
+    /* Modal Confirmation */
     .modal-overlay {
       display: none;
       position: fixed; inset: 0; z-index: 999;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
       align-items: center; justify-content: center;
       padding: 20px;
     }
@@ -243,6 +243,57 @@
       color: #fca5a5; font-family: inherit; font-size: 14px; font-weight: 600;
       cursor: pointer;
     }
+
+    /* Success Result Screen (Big notification for Check-in / Check-out) */
+    .success-modal {
+      display: none;
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(14px);
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .success-box {
+      width: 100%; max-width: 400px;
+      background: var(--card-bg);
+      border: 2px solid #10b981;
+      border-radius: 28px;
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(16, 185, 129, 0.4);
+      animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .success-box.out-mode {
+      border-color: #ef4444;
+      box-shadow: 0 25px 60px rgba(239, 68, 68, 0.4);
+    }
+    .success-icon {
+      font-size: 56px; margin-bottom: 12px;
+      display: inline-block;
+      animation: pulse 1s infinite alternate;
+    }
+    .success-title {
+      font-size: 1.5em; font-weight: 700; margin-bottom: 6px;
+    }
+    .success-name {
+      font-size: 1.2em; font-weight: 600; color: #38bdf8; margin-bottom: 12px;
+    }
+    .success-detail-box {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 16px; padding: 14px;
+      margin-bottom: 20px;
+      font-size: 0.95em; line-height: 1.6;
+    }
+    .btn-finish {
+      width: 100%; padding: 14px; border-radius: 14px;
+      background: #10b981; color: white; border: none;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -280,11 +331,11 @@
   <button id="btnStart" class="btn-start" onclick="startCamera()">📷 แตะเพื่อเริ่มสแกนใบหน้า</button>
 </div>
 
-<!-- Modal Confirm -->
+<!-- Modal 1: Confirm Details -->
 <div id="confirmModal" class="modal-overlay">
   <div class="modal-content">
     <img id="modalSnapshot" class="snapshot-thumb" src="" alt="Snapshot">
-    <p class="modal-title">ผลการตรวจจับอัตโนมัติ</p>
+    <p class="modal-title">ตรวจพบบุคคล</p>
     <div class="modal-name" id="modalName">...</div>
 
     <div id="modalDetectedType" class="detected-type type-in-badge">🟢 เข้างาน (ครั้งที่ 1 ของวัน)</div>
@@ -300,6 +351,24 @@
 
     <button class="btn-confirm" id="btnConfirm" onclick="confirmAttendance()">✅ ยืนยันการลงเวลา</button>
     <button class="btn-cancel" onclick="cancelAttendance()">ไม่ใช่ฉัน (ยกเลิก)</button>
+  </div>
+</div>
+
+<!-- Modal 2: Prominent Success Notification Screen -->
+<div id="successModal" class="success-modal">
+  <div class="success-box" id="successBox">
+    <div class="success-icon" id="successIcon">🎉</div>
+    <div class="success-title" id="successTitle">บันทึกสำเร็จ!</div>
+    <div class="success-name" id="successName">คุณสมชาย ใจดี</div>
+
+    <div class="success-detail-box">
+      <div>สถานะ: <strong id="successType">เข้างาน (Check-In)</strong></div>
+      <div>เวลาบันทึก: <span id="successTime">08:30:15 น.</span></div>
+      <div>หมายเหตุ: <span id="successStatus">ตรงเวลา</span></div>
+      <div id="successOtRow" style="display:none; color:#f59e0b; font-weight:bold;">ชั่วโมง OT: <span id="successOtVal">0</span> ชม.</div>
+    </div>
+
+    <button class="btn-finish" onclick="closeSuccessAndReset()">ตกลง (เรียบร้อย)</button>
   </div>
 </div>
 
@@ -323,6 +392,7 @@
   const mainStatus     = document.getElementById('main-status');
   const overlayStatus  = document.getElementById('overlay-status');
   const confirmModal   = document.getElementById('confirmModal');
+  const successModal   = document.getElementById('successModal');
   const gpsStatus      = document.getElementById('gps-status');
   const gpsAlertBox    = document.getElementById('gps-alert-box');
   const btnStart       = document.getElementById('btnStart');
@@ -339,7 +409,6 @@
   let currentLat    = null;
   let currentLng    = null;
 
-  // Auto-calculated fields
   let resolvedType    = 'เข้างาน (Check-In)';
   let resolvedStatus  = 'ตรงเวลา';
   let resolvedOtHours = 0;
@@ -433,11 +502,8 @@
         descriptor: new Float32Array(u.descriptor)
       }));
 
-      // Cache today's logs
-      const todayDate = new Date().toLocaleDateString('th-TH');
       todayLogs = (attRes || []).filter(item => item.date && String(item.date).includes(new Date().getDate()));
 
-      // Merge local logs for today
       try {
         const localLogs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
         localLogs.forEach(loc => {
@@ -447,7 +513,7 @@
         });
       } catch(e) {}
 
-      mainStatus.innerText = '✅ พร้อมแล้ว! มีพนักงาน ' + knownFaces.length + ' คน';
+      mainStatus.innerText = '✅ พร้อมแล้ว! มีพนักงานในระบบ ' + knownFaces.length + ' คน';
       overlayStatus.innerText = 'พร้อมสแกน';
       btnStart.style.display = 'flex';
     } catch(e) {
@@ -456,6 +522,12 @@
   }
 
   function startCamera() {
+    // Defensive check: Browser security blocks getUserMedia on non-HTTPS origins (except localhost)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showError('⚠️ เบราว์เซอร์บล็อกกล้องเนื่องจากไม่ใช่ HTTPS<br>กรุณาเปิดผ่าน https:// (Netlify) หรือ http://localhost บนเครื่องนี้');
+      return;
+    }
+
     btnStart.style.display = 'none';
     mainStatus.innerText = '📷 กำลังตรวจจับใบหน้า... กรุณามองกล้อง';
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } })
@@ -507,7 +579,6 @@
   function showModal(match) {
     currentMatch = match;
 
-    // Capture Snapshot Thumbnail
     try {
       const canvas = document.createElement('canvas');
       canvas.width = 240; canvas.height = 240;
@@ -543,12 +614,11 @@
     otBadge.style.display = 'none';
 
     if (employeeScansToday.length === 0) {
-      // ครั้งแรกของวัน -> "เข้างาน (Check-In)"
+      // First scan of day = Check-In
       resolvedType = 'เข้างาน (Check-In)';
       typeBadge.innerText = '🟢 เข้างาน (ครั้งที่ 1 ของวัน)';
       typeBadge.className = 'detected-type type-in-badge';
 
-      // คำนวณมาสาย
       const [limitH, limitM] = (workStartTime || '08:30').split(':').map(Number);
       const limitTotalMin = (limitH || 8) * 60 + (limitM || 30);
 
@@ -564,18 +634,16 @@
       }
       resolvedOtHours = 0;
     } else {
-      // ครั้งที่ 2 ของวันขึ้นไป -> "ออกงาน (Check-Out)"
+      // Subsequent scans = Check-Out
       resolvedType = 'ออกงาน (Check-Out)';
       typeBadge.innerText = '🔴 ออกงาน (ครั้งที่ ' + (employeeScansToday.length + 1) + ' ของวัน)';
       typeBadge.className = 'detected-type type-out-badge';
 
-      // คำนวณ OT หลัง 17:00 (5 โมงเย็น) - นับเฉพาะชั่วโมงเต็ม ไม่นับเศษนาที
       const [otH, otM] = (otStartTime || '17:00').split(':').map(Number);
       const otStartTotalMin = (otH || 17) * 60 + (otM || 0);
 
       if (currentTotalMin > otStartTotalMin) {
         const otDiffMinutes = currentTotalMin - otStartTotalMin;
-        // ไม่นับนาที ปัดเป็นชั่วโมงเต็มเท่านั้น (Floor)
         const fullOtHours = Math.floor(otDiffMinutes / 60);
 
         if (fullOtHours >= 1) {
@@ -608,7 +676,7 @@
     const dateStr = now.toLocaleDateString('th-TH');
     const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    // บันทึกลง local cache ทันที
+    // Cache locally
     try {
       const localLogs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
       const newRecord = {
@@ -630,8 +698,9 @@
       localStorage.setItem('last_scanned_empid', currentMatch.employeeId);
     } catch(e) {}
 
+    // Send to Google Sheets
     try {
-      const res = await fetch(API_URL, {
+      await fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify({
           action: 'logAttendance',
@@ -646,13 +715,53 @@
           photoBase64: currentSnapshot
         })
       });
-      const data = await res.json();
-      alert('✅ ' + (data.message || 'บันทึกเวลาสำเร็จ') + '\nประเภท: ' + resolvedType + '\nสถานะ: ' + resolvedStatus);
-      window.location.href = 'history.html';
-    } catch(e) {
-      alert('✅ บันทึกเวลาลงในเครื่องเรียบร้อย (ระบบจะซิงก์ Sheets ภายหลัง)');
-      window.location.href = 'history.html';
+    } catch(e) {}
+
+    // Show High-Impact Success Screen!
+    confirmModal.style.display = 'none';
+    showSuccessScreen(currentMatch.name, resolvedType, timeStr, resolvedStatus, resolvedOtHours);
+  }
+
+  function showSuccessScreen(name, type, time, status, ot) {
+    const isCheckIn = type.includes('Check-In') || type.includes('เข้างาน');
+    const box = document.getElementById('successBox');
+    const icon = document.getElementById('successIcon');
+    const title = document.getElementById('successTitle');
+
+    if (isCheckIn) {
+      box.className = 'success-box';
+      icon.innerText = '🟢';
+      title.innerText = 'บันทึก "เข้างาน (Check-In)" สำเร็จ!';
+      title.style.color = '#34d399';
+    } else {
+      box.className = 'success-box out-mode';
+      icon.innerText = '🔴';
+      title.innerText = 'บันทึก "ออกงาน (Check-Out)" สำเร็จ!';
+      title.style.color = '#f87171';
     }
+
+    document.getElementById('successName').innerText   = name;
+    document.getElementById('successType').innerText   = type;
+    document.getElementById('successTime').innerText   = time + ' น.';
+    document.getElementById('successStatus').innerText = status;
+
+    const otRow = document.getElementById('successOtRow');
+    if (ot && ot > 0) {
+      otRow.style.display = 'block';
+      document.getElementById('successOtVal').innerText = ot;
+    } else {
+      otRow.style.display = 'none';
+    }
+
+    successModal.style.display = 'flex';
+  }
+
+  function closeSuccessAndReset() {
+    successModal.style.display = 'none';
+    btnConfirm.disabled = false;
+    btnConfirm.innerText = '✅ ยืนยันการลงเวลา';
+    currentMatch = null;
+    startScanning(); // resume camera scanning for next person!
   }
 
   function cancelAttendance() {

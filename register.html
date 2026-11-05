@@ -109,7 +109,7 @@
       border: none; color: white; font-size: 15px; font-weight: 600; cursor: pointer;
     }
 
-    /* Main Register Form (hidden until unlocked) */
+    /* Main Register Form */
     .register-content { display: none; }
 
     .page-header { text-align: center; margin-bottom: 20px; }
@@ -144,7 +144,7 @@
     }
 
     .form-row {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px;
     }
 
     label { display: block; font-size: 0.82em; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
@@ -178,24 +178,24 @@
     <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">🌙</button>
   </div>
 
-  <!-- PIN Protection Gate -->
+  <!-- PIN Protection Gate (Admin Only) -->
   <div id="pinGate" class="pin-gate">
     <div class="pin-icon">🔒</div>
-    <div class="pin-title">ส่วนสำหรับผู้ดูแลระบบ (Admin)</div>
-    <p class="pin-desc">กรุณากรอกรหัสผ่าน Admin PIN เพื่อลงทะเบียนพนักงานใหม่</p>
+    <div class="pin-title">ส่วนสำหรับผู้ดูแลระบบ (Admin Only)</div>
+    <p class="pin-desc">หน้านี้สงวนสิทธิ์เฉพาะผู้ดูแลระบบ กรุณากรอก Admin PIN เพื่อดำเนินการ</p>
     <div>
       <input type="password" id="pinInput" class="pin-input" maxlength="8" placeholder="••••" onkeypress="if(event.key==='Enter') verifyPin()">
     </div>
-    <button class="btn-pin" onclick="verifyPin()">ยืนยันรหัสผ่าน</button>
+    <button class="btn-pin" onclick="verifyPin()">ยืนยันรหัสผ่าน Admin</button>
     <div id="pinError" style="color:#f87171; margin-top:12px; display:none;">❌ รหัสผ่าน Admin ไม่ถูกต้อง</div>
-    <p style="font-size:0.78em; color:var(--text-muted); margin-top:14px;">(รหัสเริ่มต้นจากระบบคือ 1234 สามารถเปลี่ยนได้ในหน้าตั้งค่า)</p>
+    <p style="font-size:0.78em; color:var(--text-muted); margin-top:14px;">(รหัสเริ่มต้นคือ 1234)</p>
   </div>
 
   <!-- Main Register UI -->
   <div id="registerContent" class="register-content">
     <div class="page-header">
       <h2>👤 ลงทะเบียนพนักงานใหม่</h2>
-      <p class="instruction">ระบุสิทธิ์ แผนก และมองกล้องบันทึก 3 มุมมอง<br>(หน้าตรง / หันซ้ายเล็กน้อย / หันขวาเล็กน้อย)</p>
+      <p class="instruction">กำหนดรหัส PIN 4 หลักประจำตัวพนักงาน และมองกล้องบันทึก 3 มุมมอง</p>
     </div>
 
     <div class="step-dots">
@@ -217,18 +217,18 @@
           <input type="text" id="employeeId" placeholder="เช่น EMP001">
         </div>
         <div>
-          <label>ระดับสิทธิ์การใช้งาน (Role)</label>
-          <select id="role">
-            <option value="พนักงานทั่วไป">พนักงานทั่วไป (Staff)</option>
-            <option value="ผู้ดูแลระบบ">ผู้ดูแลระบบ (Admin)</option>
-          </select>
+          <label>🔑 รหัส PIN 4 หลักของพนักงาน</label>
+          <input type="password" id="userPin" maxlength="4" placeholder="เช่น 5678" title="พนักงานใช้ PIN นี้เพื่อเปิดดูประวัติส่วนตัว">
         </div>
       </div>
 
       <div class="form-row">
         <div>
-          <label>ชื่อ-นามสกุล</label>
-          <input type="text" id="username" placeholder="เช่น สมชาย ใจดี">
+          <label>ระดับสิทธิ์ (Role)</label>
+          <select id="role">
+            <option value="พนักงานทั่วไป">พนักงานทั่วไป (Staff)</option>
+            <option value="ผู้ดูแลระบบ">ผู้ดูแลระบบ (Admin)</option>
+          </select>
         </div>
         <div>
           <label>แผนก / ฝ่าย</label>
@@ -243,6 +243,9 @@
           </select>
         </div>
       </div>
+
+      <label>ชื่อ-นามสกุลพนักงาน</label>
+      <input type="text" id="username" placeholder="เช่น สมชาย ใจดี">
 
       <button id="btnSave" class="btn-save" onclick="saveFace()" disabled>
         📸 บันทึกใบหน้า <span id="saveCount" class="count-badge">0 / 3</span>
@@ -312,6 +315,12 @@
   }
 
   function startCamera() {
+    // Defensive check: Browser security blocks getUserMedia on non-HTTPS origins (except localhost)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      statusDiv.innerHTML = '<span style="color:#f87171">⚠️ เบราว์เซอร์บล็อกกล้องเนื่องจากไม่ใช่ HTTPS<br>กรุณาเปิดผ่าน https:// (Netlify) หรือ http://localhost บนเครื่องนี้</span>';
+      return;
+    }
+
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       .then(stream => {
         video.srcObject = stream;
@@ -329,8 +338,10 @@
     const name  = document.getElementById('username').value.trim();
     const dept  = document.getElementById('department').value;
     const role  = document.getElementById('role').value;
+    const pin   = document.getElementById('userPin').value.trim() || '1234';
 
     if (!name) return alert('กรุณากรอกชื่อ-นามสกุลพนักงาน');
+    if (pin.length < 4) return alert('กรุณากำหนดรหัส PIN อย่างน้อย 4 หลักสำหรับพนักงานคนนี้');
 
     btnSave.disabled = true;
     btnSave.innerHTML = '⏳ กำลังวิเคราะห์ใบหน้า... <span class="count-badge">' + saveCounter + ' / 3</span>';
@@ -359,6 +370,7 @@
           name: name,
           department: dept,
           role: role,
+          pin: pin,
           faceDescriptor: descriptorArray
         })
       });
@@ -369,10 +381,10 @@
       updateDots();
 
       if (saveCounter >= 3) {
-        msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนสำเร็จเรียบร้อย! (สิทธิ์: ' + role + ')</span>';
+        msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนสำเร็จเรียบร้อย! (สิทธิ์: ' + role + ' | PIN: ' + pin + ')</span>';
         btnSave.innerHTML = '✅ ลงทะเบียนสำเร็จ';
         btnSave.disabled = true;
-        setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+        setTimeout(() => { window.location.href = 'index.html'; }, 2500);
       } else {
         msgDiv.innerHTML = '<span class="msg-success">✅ บันทึกมุมที่ ' + saveCounter + ' สำเร็จ! กรุณาเอียงหน้าเล็กน้อยแล้วกดอีกครั้ง</span>';
         btnSave.disabled = false;
@@ -387,14 +399,12 @@
 
   window.addEventListener('load', () => {
     initTheme();
-    // Fetch latest admin PIN from GAS if available
     if (API_URL) {
       fetch(API_URL + '?action=getConfig')
         .then(r => r.json())
         .then(cfg => { if (cfg.adminPin) adminPin = cfg.adminPin; })
         .catch(() => {});
     }
-    // Check if already authenticated in this session
     if (sessionStorage.getItem('is_admin_authenticated') === 'true') {
       document.getElementById('pinGate').style.display = 'none';
       document.getElementById('registerContent').style.display = 'block';
