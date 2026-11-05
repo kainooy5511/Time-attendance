@@ -617,11 +617,11 @@
 
     try {
       const canvas = document.createElement('canvas');
-      canvas.width = 240; canvas.height = 240;
+      canvas.width = 160; canvas.height = 160;
       const ctx = canvas.getContext('2d');
-      ctx.translate(240, 0); ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0, 240, 240);
-      currentSnapshot = canvas.toDataURL('image/jpeg', 0.65);
+      ctx.translate(160, 0); ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, 160, 160);
+      currentSnapshot = canvas.toDataURL('image/jpeg', 0.45);
       document.getElementById('modalSnapshot').src = currentSnapshot;
     } catch(e) {
       document.getElementById('modalSnapshot').style.display = 'none';
@@ -703,16 +703,15 @@
     confirmModal.style.display = 'flex';
   }
 
-  async function confirmAttendance() {
+  function confirmAttendance() {
     const btn = document.getElementById('btnConfirm');
     btn.disabled  = true;
-    btn.innerText = '⏳ กำลังบันทึกข้อมูล...';
 
     const now = new Date();
     const dateStr = now.toLocaleDateString('th-TH');
     const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    // Cache locally
+    // 1. แคชข้อมูลในเครื่องทันที
     try {
       const localLogs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
       const newRecord = {
@@ -734,28 +733,29 @@
       localStorage.setItem('last_scanned_empid', currentMatch.employeeId);
     } catch(e) {}
 
-    // Send to Google Sheets
-    try {
-      await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-          action: 'logAttendance',
-          employeeId: currentMatch.employeeId || 'EMP',
-          name: currentMatch.name,
-          department: currentMatch.department || 'ทั่วไป',
-          type: resolvedType,
-          status: resolvedStatus,
-          otHours: resolvedOtHours,
-          lat: currentLat,
-          lng: currentLng,
-          photoBase64: currentSnapshot
-        })
-      });
-    } catch(e) {}
-
-    // Show High-Impact Success Screen!
+    // 2. OPTIMISTIC UI: สลับหน้าจอแจ้ง "สำเร็จ" ทันทีใน 0.05 วินาที! พนักงานไม่ต้องยืนรอโหลด
     confirmModal.style.display = 'none';
     showSuccessScreen(currentMatch.name, resolvedType, timeStr, resolvedStatus, resolvedOtHours);
+
+    // 3. ส่งข้อมูลเข้า Google Sheets ใน Background ทันที โดยไม่บล็อกหน้าจอผู้ใช้
+    fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'logAttendance',
+        employeeId: currentMatch.employeeId || 'EMP',
+        name: currentMatch.name,
+        department: currentMatch.department || 'ทั่วไป',
+        type: resolvedType,
+        status: resolvedStatus,
+        otHours: resolvedOtHours,
+        lat: currentLat,
+        lng: currentLng,
+        photoBase64: currentSnapshot
+      })
+    })
+    .then(r => r.json())
+    .then(res => console.log('Attendance synced successfully:', res))
+    .catch(err => console.warn('Background sync warning:', err));
   }
 
   function showSuccessScreen(name, type, time, status, ot) {
