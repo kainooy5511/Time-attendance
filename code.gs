@@ -57,13 +57,31 @@ function setupAndCreateSheets() {
 function cleanMockupData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // ล้างข้อมูลทดสอบใน Attendance (คงเหลือเฉพาะหัวตาราง)
+  // 1. ล้างข้อมูลทดสอบในชีต Users ที่ไม่ใช่ 128 มิติ (เช่น Mockup เก่า 3 มิติ)
+  const usersSheet = ss.getSheetByName('Users');
+  if (usersSheet && usersSheet.getLastRow() > 1) {
+    const data = usersSheet.getDataRange().getValues();
+    for (let i = data.length - 1; i >= 1; i--) {
+      const jsonStr = data[i][5] || data[i][4] || '';
+      try {
+        const arr = JSON.parse(jsonStr);
+        if (!Array.isArray(arr) || arr.length !== 128) {
+          usersSheet.deleteRow(i + 1);
+        }
+      } catch (e) {
+        usersSheet.deleteRow(i + 1);
+      }
+    }
+  }
+
+  // 2. ล้างข้อมูลทดสอบใน Attendance (คงเหลือเฉพาะหัวตาราง)
   const attSheet = ss.getSheetByName('Attendance');
   if (attSheet && attSheet.getLastRow() > 1) {
     attSheet.deleteRows(2, attSheet.getLastRow() - 1);
   }
   
   Logger.log('🧹 ล้างข้อมูล Mockup/ทดสอบเรียบร้อย ฐานข้อมูลสะอาดพร้อมใช้งานจริง 100%');
+  return { success: true, message: 'ล้างข้อมูลทดสอบเรียบร้อยแล้ว' };
 }
 
 // 2. HTTP GET Handler
@@ -87,6 +105,8 @@ function doGet(e) {
     result = getKnownFaces();
   } else if (action === 'getAttendance') {
     result = getAttendance();
+  } else if (action === 'cleanMockupData') {
+    result = cleanMockupData();
   } else {
     result = { error: 'Unknown action: ' + action };
   }
@@ -215,15 +235,19 @@ function getKnownFaces() {
 
     if (name && jsonStr) {
       try {
-        users.push({
-          label: name,
-          name: name,
-          employeeId: empId,
-          department: dept,
-          role: role,
-          pin: pin,
-          descriptor: JSON.parse(jsonStr)
-        });
+        const parsedDesc = JSON.parse(jsonStr);
+        // DEFENSIVE CHECK: เวกเตอร์ใบหน้าต้องเป็น 128 มิติเท่านั้น ป้องกันข้อผิดพลาดในการคำนวณระยะห่าง
+        if (Array.isArray(parsedDesc) && parsedDesc.length === 128) {
+          users.push({
+            label: name,
+            name: name,
+            employeeId: empId,
+            department: dept,
+            role: role,
+            pin: pin,
+            descriptor: parsedDesc
+          });
+        }
       } catch (e) {}
     }
   }

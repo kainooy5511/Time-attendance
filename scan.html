@@ -397,7 +397,8 @@
   const gpsAlertBox    = document.getElementById('gps-alert-box');
   const btnStart       = document.getElementById('btnStart');
 
-  const MATCH_THRESHOLD = 0.45;
+  // เกณฑ์ระยะห่างใบหน้า (0.58 เหมาะสมที่สุดสำหรับกล้องมือถือในสภาพแสงทั่วไป แม่นยำ ไม่เพี้ยน)
+  const MATCH_THRESHOLD = 0.58;
 
   let workStartTime = '08:30';
   let otStartTime   = '17:00';
@@ -494,13 +495,16 @@
         fetch(API_URL + '?action=getAttendance').then(r => r.json()).catch(() => [])
       ]);
 
-      knownFaces = usersRes.map(u => ({
-        name: u.name || u.label,
-        employeeId: u.employeeId || 'EMP',
-        department: u.department || 'ทั่วไป',
-        role: u.role || 'พนักงานทั่วไป',
-        descriptor: new Float32Array(u.descriptor)
-      }));
+      // กรองเฉพาะใบหน้าที่มีขนาดเวกเตอร์ 128 มิติจริง ป้องกันข้อผิดพลาดในการคำนวณ
+      knownFaces = (usersRes || [])
+        .filter(u => u && u.descriptor && (u.descriptor.length === 128 || (Array.isArray(u.descriptor) && u.descriptor.length === 128)))
+        .map(u => ({
+          name: u.name || u.label,
+          employeeId: u.employeeId || 'EMP',
+          department: u.department || 'ทั่วไป',
+          role: u.role || 'พนักงานทั่วไป',
+          descriptor: new Float32Array(u.descriptor)
+        }));
 
       function isSameDateAsToday(dateVal) {
         if (!dateVal) return false;
@@ -552,38 +556,57 @@
   }
 
   function startScanning() {
-    overlayStatus.innerText = 'กำลังสแกน...';
+    overlayStatus.innerText = 'กำลังสแกน... กรุณามองตรงเข้ากล้อง';
     scanInterval = setInterval(async () => {
-      const detection = await faceapi
-        .detectSingleFace(video)
-        .withFaceLandmarks()
-        .withFaceDescriptor();
+      try {
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.35 }))
+          .withFaceLandmarks()
+          .withFaceDescriptor();
 
-      if (detection) {
-        const match = findBestMatch(detection.descriptor);
-        if (match && match.distance < MATCH_THRESHOLD) {
-          clearInterval(scanInterval);
-          overlayStatus.innerText = 'ตรวจพบ: ' + match.name;
-          showModal(match);
+        if (detection) {
+          const match = findBestMatch(detection.descriptor);
+          if (match && match.distance < MATCH_THRESHOLD) {
+            clearInterval(scanInterval);
+            overlayStatus.innerText = '✅ ตรวจพบ: ' + match.name;
+            overlayStatus.style.background = 'rgba(16, 185, 129, 0.9)';
+            showModal(match);
+          } else if (match && match.distance < 0.70) {
+            overlayStatus.innerText = '🔍 กำลังวิเคราะห์: ' + (match.name !== 'unknown' ? match.name : 'กรุณาเข้าใกล้กล้องอีกนิด');
+            overlayStatus.style.background = 'rgba(245, 158, 11, 0.85)';
+          } else {
+            overlayStatus.innerText = '👤 ตรวจพบใบหน้า แต่ไม่พบในระบบ';
+            overlayStatus.style.background = 'rgba(239, 68, 68, 0.85)';
+          }
         } else {
-          overlayStatus.innerText = 'ไม่พบในระบบ';
+          overlayStatus.innerText = '📷 กรุณามองตรงเข้ากล้องในที่สว่าง';
+          overlayStatus.style.background = 'rgba(0,0,0,0.6)';
         }
+      } catch(err) {
+        console.warn('Scan frame error:', err);
       }
-    }, 500);
+    }, 400);
   }
 
   function findBestMatch(queryDesc) {
     let best = { name: 'unknown', distance: 1.0 };
+    if (!queryDesc || queryDesc.length !== 128) return best;
+
     knownFaces.forEach(u => {
-      const d = faceapi.euclideanDistance(queryDesc, u.descriptor);
-      if (d < best.distance) {
-        best = {
-          name: u.name,
-          employeeId: u.employeeId,
-          department: u.department,
-          role: u.role,
-          distance: d
-        };
+      if (!u.descriptor || u.descriptor.length !== 128) return;
+      try {
+        const d = faceapi.euclideanDistance(queryDesc, u.descriptor);
+        if (!isNaN(d) && d < best.distance) {
+          best = {
+            name: u.name,
+            employeeId: u.employeeId,
+            department: u.department,
+            role: u.role,
+            distance: d
+          };
+        }
+      } catch(e) {
+        console.warn('Distance error on', u.name, e);
       }
     });
     return best;
