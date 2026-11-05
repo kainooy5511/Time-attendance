@@ -314,7 +314,7 @@
 
   function verifyPin() {
     const input = document.getElementById('pinInput').value.trim();
-    if (input === currentAdminPin || input === '1234') {
+    if (input === currentAdminPin) {
       document.getElementById('pinGate').style.display = 'none';
       document.getElementById('configContent').style.display = 'block';
       sessionStorage.setItem('is_admin_authenticated', 'true');

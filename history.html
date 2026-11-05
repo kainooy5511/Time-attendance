@@ -355,7 +355,7 @@
 
     if (selectedId === '__admin__') {
       // Admin Authentication
-      if (pin === adminMasterPin || pin === '1234') {
+      if (pin === adminMasterPin) {
         currentLoggedInUser = { role: 'Admin', name: 'ผู้ดูแลระบบ' };
         unlockView('admin');
       } else {
@@ -365,9 +365,10 @@
     } else {
       // Employee Authentication
       const emp = registeredUsers.find(u => u.employeeId === selectedId);
-      const correctPin = emp ? String(emp.pin || '1234') : '1234';
+      const correctPin = emp ? String(emp.pin || '').replace(/'/g, '') : '';
 
-      if (pin === correctPin || pin === adminMasterPin || pin === '1234') {
+      // พนักงานต้องใส่ PIN 4 หลักของตัวเอง (หรือ Master Admin PIN)
+      if ((correctPin && pin === correctPin) || pin === adminMasterPin) {
         currentLoggedInUser = emp || { name: 'พนักงาน', employeeId: selectedId, role: 'พนักงานทั่วไป' };
         unlockView('employee');
       } else {
@@ -417,7 +418,7 @@
       }
     }
 
-    // Merge
+    // Clean & Sanitize
     const merged = [...remoteLogs];
     localLogs.forEach(loc => {
       if (!merged.some(r => r.name === loc.name && r.time === loc.time && r.date === loc.date)) {
@@ -425,9 +426,38 @@
       }
     });
 
-    allRecords = merged;
+    // กรองแถวเสียหรือ mockup ทดสอบออก ให้เหลือเฉพาะข้อมูลจริง
+    allRecords = merged.filter(r => r && r.name && !String(r.name).includes('1899-12-30') && r.name !== 'ทดสอบ สมชาย');
     populateAdminDropdowns(allRecords);
     applyFilters();
+  }
+
+  function formatDisplayTime(val) {
+    if (!val) return '-';
+    let s = String(val).replace(/'/g, '').trim();
+    if (s.includes('T') && s.includes('Z')) {
+      try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+      } catch(e) {}
+    }
+    return s;
+  }
+
+  function formatDisplayDate(val) {
+    if (!val) return '-';
+    let s = String(val).replace(/'/g, '').trim();
+    if (s.includes('T') && s.includes('Z')) {
+      try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('th-TH');
+        }
+      } catch(e) {}
+    }
+    return s;
   }
 
   function populateAdminDropdowns(records) {
@@ -526,8 +556,8 @@
                 ${otBadge}
               </div>
               <div class="date-time">
-                <span>🕒 ${item.time || '-'}</span>
-                <span>📅 ${item.date || '-'}</span>
+                <span>🕒 ${formatDisplayTime(item.time)}</span>
+                <span>📅 ${formatDisplayDate(item.date)}</span>
                 ${mapLink}
               </div>
             </div>
@@ -552,8 +582,8 @@
       'ชื่อ-นามสกุล (Name)': row.name || '-',
       'แผนก (Department)': row.department || 'ทั่วไป',
       'ประเภท (Type)': row.type || 'เข้างาน',
-      'วันที่ (Date)': String(row.date || '').replace(/'/g, ''),
-      'เวลา (Time)': row.time || '-',
+      'วันที่ (Date)': formatDisplayDate(row.date),
+      'เวลา (Time)': formatDisplayTime(row.time),
       'สถานะ (Status)': row.status || 'ปกติ',
       'ชั่วโมง OT (OT Hours)': row.otHours || 0,
       'ละติจูด (Lat)': row.lat || '-',

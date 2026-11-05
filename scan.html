@@ -359,7 +359,7 @@
   <div class="success-box" id="successBox">
     <div class="success-icon" id="successIcon">🎉</div>
     <div class="success-title" id="successTitle">บันทึกสำเร็จ!</div>
-    <div class="success-name" id="successName">คุณสมชาย ใจดี</div>
+    <div class="success-name" id="successName">-</div>
 
     <div class="success-detail-box">
       <div>สถานะ: <strong id="successType">เข้างาน (Check-In)</strong></div>
@@ -502,7 +502,20 @@
         descriptor: new Float32Array(u.descriptor)
       }));
 
-      todayLogs = (attRes || []).filter(item => item.date && String(item.date).includes(new Date().getDate()));
+      function isSameDateAsToday(dateVal) {
+        if (!dateVal) return false;
+        const now = new Date();
+        const d = now.getDate();
+        const m = now.getMonth() + 1;
+        const s = String(dateVal).replace(/'/g, '').trim();
+        const parts = s.split(/[/ -]/);
+        if (parts.length >= 2) {
+          return parseInt(parts[0], 10) === d && parseInt(parts[1], 10) === m;
+        }
+        return false;
+      }
+
+      todayLogs = (attRes || []).filter(item => isSameDateAsToday(item.date));
 
       try {
         const localLogs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');

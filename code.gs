@@ -1,5 +1,5 @@
 // ============================================================
-//  GOOGLE APPS SCRIPT — Enterprise Attendance API Backend V4
+//  GOOGLE APPS SCRIPT — Enterprise Attendance API Backend V5 (Production)
 //  ฟังก์ชัน: ระบบ PIN พนักงาน, Admin Gate, สแกนออโต้, คำนวณ OT, รายงาน Excel
 // ============================================================
 
@@ -45,17 +45,29 @@ function setupAndCreateSheets() {
   if (configSheet.getRange('B2').getValue() === '') configSheet.getRange('B2').setValue(13.7563);
   if (configSheet.getRange('B3').getValue() === '') configSheet.getRange('B3').setValue(100.5018);
   if (configSheet.getRange('B4').getValue() === '') configSheet.getRange('B4').setValue(0.5);
-  if (configSheet.getRange('B5').getValue() === '') configSheet.getRange('B5').setValue('08:30');
-  if (configSheet.getRange('B6').getValue() === '') configSheet.getRange('B6').setValue('17:00');
+  if (configSheet.getRange('B5').getValue() === '') configSheet.getRange('B5').setValue("'08:30");
+  if (configSheet.getRange('B6').getValue() === '') configSheet.getRange('B6').setValue("'17:00");
   if (configSheet.getRange('B7').getValue() === '') configSheet.getRange('B7').setValue("'1234");
   configSheet.setColumnWidth(1, 180);
 
-  Logger.log('✅ สร้างชีต Users, Attendance, และ Config เรียบร้อยสมบูรณ์ 100%');
+  Logger.log('✅ ตรวจสอบและสร้างชีต Users, Attendance, Config เรียบร้อย 100%');
 }
 
-// 2. HTTP GET Handler (ป้องกัน Error เมื่อกดปุ่ม Run ในโปรแกรม Apps Script)
+// ฟังก์ชันล้างข้อมูล Mockup/ข้อมูลทดสอบ ให้พร้อมใช้งานจริงทันที
+function cleanMockupData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // ล้างข้อมูลทดสอบใน Attendance (คงเหลือเฉพาะหัวตาราง)
+  const attSheet = ss.getSheetByName('Attendance');
+  if (attSheet && attSheet.getLastRow() > 1) {
+    attSheet.deleteRows(2, attSheet.getLastRow() - 1);
+  }
+  
+  Logger.log('🧹 ล้างข้อมูล Mockup/ทดสอบเรียบร้อย ฐานข้อมูลสะอาดพร้อมใช้งานจริง 100%');
+}
+
+// 2. HTTP GET Handler
 function doGet(e) {
-  // ป้องกันกรณีผู้ใช้กดปุ่ม "เรียกใช้ (Run)" ในโปรแกรม Apps Script โดยตรง
   if (!e || !e.parameter) {
     setupAndCreateSheets();
     return ContentService
@@ -159,7 +171,7 @@ function registerUser(employeeId, name, department, role, pin, faceDescriptor) {
     role || 'พนักงานทั่วไป',
     "'" + (pin || '1234'),
     JSON.stringify(faceDescriptor),
-    new Date()
+    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss')
   ]);
 
   return { success: true, message: 'ลงทะเบียนพนักงานและรหัส PIN เรียบร้อย' };
@@ -183,7 +195,7 @@ function getKnownFaces() {
       name = row[1];
       dept = row[2];
       role = row[3] || 'พนักงานทั่วไป';
-      pin = String(row[4] || '1234');
+      pin = String(row[4] || '1234').replace(/'/g, '');
       jsonStr = row[5];
     } else if (row.length === 5) {
       empId = row[0];
@@ -256,7 +268,7 @@ function logAttendance(name, lat, lng, employeeId, department, type, status, otH
     name,
     department || '-',
     type || 'เข้างาน (Check-In)',
-    timeStr,
+    "'" + timeStr,
     "'" + dateStr,
     status || 'ปกติ',
     otHours || 0,
@@ -286,14 +298,30 @@ function getAttendance() {
   let list = [];
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
+    
+    // แปลงเวลาและวันที่ให้เป็นข้อความที่ถูกต้อง ไม่เป็น Object 1899 Date
+    let timeVal = row[4];
+    if (timeVal instanceof Date) {
+      timeVal = Utilities.formatDate(timeVal, Session.getScriptTimeZone(), 'HH:mm:ss');
+    } else {
+      timeVal = String(timeVal || '-').replace(/'/g, '');
+    }
+
+    let dateVal = row[5];
+    if (dateVal instanceof Date) {
+      dateVal = Utilities.formatDate(dateVal, Session.getScriptTimeZone(), 'd/M/yyyy');
+    } else {
+      dateVal = String(dateVal || '-').replace(/'/g, '');
+    }
+
     if (row.length >= 11) {
       list.push({
         employeeId: row[0],
         name: row[1],
         department: row[2],
         type: row[3],
-        time: row[4],
-        date: row[5],
+        time: timeVal,
+        date: dateVal,
         status: row[6],
         otHours: row[7],
         lat: row[8],
@@ -307,8 +335,8 @@ function getAttendance() {
         name: row[1] || row[0],
         department: row[2] || '-',
         type: row[3] || 'เข้างาน',
-        time: row[4] || row[1],
-        date: row[5] || row[2],
+        time: timeVal,
+        date: dateVal,
         status: row[6] || 'ปกติ',
         otHours: 0,
         lat: row[7] || row[3] || '-',
@@ -333,8 +361,8 @@ function saveConfig(lat, lng, radius, workStartTime, otStartTime, adminPin) {
   if (lat !== undefined) sheet.getRange('B2').setValue(lat);
   if (lng !== undefined) sheet.getRange('B3').setValue(lng);
   if (radius !== undefined) sheet.getRange('B4').setValue(radius);
-  if (workStartTime !== undefined) sheet.getRange('B5').setValue(workStartTime);
-  if (otStartTime !== undefined) sheet.getRange('B6').setValue(otStartTime);
+  if (workStartTime !== undefined) sheet.getRange('B5').setValue("'" + workStartTime);
+  if (otStartTime !== undefined) sheet.getRange('B6').setValue("'" + otStartTime);
   if (adminPin !== undefined) sheet.getRange('B7').setValue("'" + adminPin);
 
   return { success: true, message: 'บันทึกการตั้งค่าลง Google Sheets เรียบร้อย' };
@@ -345,8 +373,8 @@ function getConfig() {
   const sheet = ss.getSheetByName('Config');
 
   let config = {
-    lat: 0,
-    lng: 0,
+    lat: 13.7563,
+    lng: 100.5018,
     radius: 0.5,
     workStartTime: '08:30',
     otStartTime: '17:00',
@@ -357,16 +385,27 @@ function getConfig() {
     const latVal = sheet.getRange('B2').getValue();
     const lngVal = sheet.getRange('B3').getValue();
     const radiusVal = sheet.getRange('B4').getValue();
-    const workTimeVal = sheet.getRange('B5').getValue();
-    const otTimeVal = sheet.getRange('B6').getValue();
-    const pinVal = sheet.getRange('B7').getValue();
+    let workTimeVal = sheet.getRange('B5').getValue();
+    let otTimeVal = sheet.getRange('B6').getValue();
+    let pinVal = sheet.getRange('B7').getValue();
 
     if (latVal !== '') config.lat = parseFloat(latVal);
     if (lngVal !== '') config.lng = parseFloat(lngVal);
     if (radiusVal !== '') config.radius = parseFloat(radiusVal);
-    if (workTimeVal !== '') config.workStartTime = String(workTimeVal);
-    if (otTimeVal !== '') config.otStartTime = String(otTimeVal);
-    if (pinVal !== '') config.adminPin = String(pinVal);
+    
+    if (workTimeVal instanceof Date) {
+      config.workStartTime = Utilities.formatDate(workTimeVal, Session.getScriptTimeZone(), 'HH:mm');
+    } else if (workTimeVal !== '') {
+      config.workStartTime = String(workTimeVal).replace(/'/g, '');
+    }
+
+    if (otTimeVal instanceof Date) {
+      config.otStartTime = Utilities.formatDate(otTimeVal, Session.getScriptTimeZone(), 'HH:mm');
+    } else if (otTimeVal !== '') {
+      config.otStartTime = String(otTimeVal).replace(/'/g, '');
+    }
+
+    if (pinVal !== '') config.adminPin = String(pinVal).replace(/'/g, '');
   }
 
   return config;
