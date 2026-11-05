@@ -1,10 +1,72 @@
 // ============================================================
 //  GOOGLE APPS SCRIPT — Enterprise Attendance API Backend V4
-//  ฟังก์ชัน: ระบบ PIN พนักงานรายบุคคล, Admin Gate, สแกนออโต้เข้า/ออก, คำนวณ OT, และส่งออก Excel
+//  ฟังก์ชัน: ระบบ PIN พนักงาน, Admin Gate, สแกนออโต้, คำนวณ OT, รายงาน Excel
 // ============================================================
 
+// 1. ฟังก์ชันทดสอบและสร้างหัวตารางทั้งหมดใน Google Sheets อัตโนมัติ
+// (สามารถเลือกฟังก์ชันนี้แล้วกดปุ่ม "เรียกใช้ / Run" ได้เลยโดยไม่ติด Error)
+function setupAndCreateSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // สร้างแผ่นงาน Users
+  let usersSheet = ss.getSheetByName('Users');
+  if (!usersSheet) {
+    usersSheet = ss.insertSheet('Users');
+  }
+  usersSheet.getRange(1, 1, 1, 7).setValues([[
+    'Emp ID', 'Name', 'Department', 'Role', 'PIN', 'Face Descriptor', 'Registered At'
+  ]]).setFontWeight('bold').setBackground('#e0e7ff');
+  usersSheet.setFrozenRows(1);
+
+  // สร้างแผ่นงาน Attendance
+  let attSheet = ss.getSheetByName('Attendance');
+  if (!attSheet) {
+    attSheet = ss.insertSheet('Attendance');
+  }
+  attSheet.getRange(1, 1, 1, 12).setValues([[
+    'Emp ID', 'Name', 'Department', 'Type', 'Time', 'Date', 'Status', 'OT Hours', 'Latitude', 'Longitude', 'Google Map Link', 'Photo Link'
+  ]]).setFontWeight('bold').setBackground('#dcfce7');
+  attSheet.setFrozenRows(1);
+
+  // สร้างแผ่นงาน Config
+  let configSheet = ss.getSheetByName('Config');
+  if (!configSheet) {
+    configSheet = ss.insertSheet('Config');
+  }
+  configSheet.getRange('A1:B1').setValues([['Parameter', 'Value']]).setFontWeight('bold').setBackground('#f1f5f9');
+  configSheet.getRange('A2:A7').setValues([
+    ['Target Latitude'],
+    ['Target Longitude'],
+    ['Allowed Radius (KM)'],
+    ['Work Start Time'],
+    ['OT Start Time'],
+    ['Admin PIN']
+  ]);
+  if (configSheet.getRange('B2').getValue() === '') configSheet.getRange('B2').setValue(13.7563);
+  if (configSheet.getRange('B3').getValue() === '') configSheet.getRange('B3').setValue(100.5018);
+  if (configSheet.getRange('B4').getValue() === '') configSheet.getRange('B4').setValue(0.5);
+  if (configSheet.getRange('B5').getValue() === '') configSheet.getRange('B5').setValue('08:30');
+  if (configSheet.getRange('B6').getValue() === '') configSheet.getRange('B6').setValue('17:00');
+  if (configSheet.getRange('B7').getValue() === '') configSheet.getRange('B7').setValue("'1234");
+  configSheet.setColumnWidth(1, 180);
+
+  Logger.log('✅ สร้างชีต Users, Attendance, และ Config เรียบร้อยสมบูรณ์ 100%');
+}
+
+// 2. HTTP GET Handler (ป้องกัน Error เมื่อกดปุ่ม Run ในโปรแกรม Apps Script)
 function doGet(e) {
-  const action = e.parameter ? e.parameter.action : '';
+  // ป้องกันกรณีผู้ใช้กดปุ่ม "เรียกใช้ (Run)" ในโปรแกรม Apps Script โดยตรง
+  if (!e || !e.parameter) {
+    setupAndCreateSheets();
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        status: 'OK',
+        message: 'Google Apps Script ทำงานปกติ และสร้างชีตตารางเริ่มต้นให้เรียบร้อยแล้ว'
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const action = e.parameter.action || '';
   let result;
 
   if (action === 'getConfig') {
@@ -22,7 +84,14 @@ function doGet(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// 3. HTTP POST Handler
 function doPost(e) {
+  if (!e || !e.postData || !e.postData.contents) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ error: 'No POST data received' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   let data;
   try {
     data = JSON.parse(e.postData.contents);
@@ -74,13 +143,13 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// --- 1. ส่วนจัดการใบหน้า, สิทธิ์, และรหัส PIN พนักงาน (Users) ---
+// --- ส่วนจัดการใบหน้า, สิทธิ์, และรหัส PIN พนักงาน (Users) ---
 function registerUser(employeeId, name, department, role, pin, faceDescriptor) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Users');
   if (!sheet) {
-    sheet = ss.insertSheet('Users');
-    sheet.appendRow(['Emp ID', 'Name', 'Department', 'Role', 'PIN', 'Face Descriptor', 'Registered At']);
+    setupAndCreateSheets();
+    sheet = ss.getSheetByName('Users');
   }
 
   sheet.appendRow([
@@ -149,26 +218,13 @@ function getKnownFaces() {
   return users;
 }
 
-// --- 2. ส่วนบันทึกเวลาเข้า-ออกงาน (Attendance) ---
+// --- ส่วนบันทึกเวลาเข้า-ออกงาน (Attendance) ---
 function logAttendance(name, lat, lng, employeeId, department, type, status, otHours, photoBase64) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Attendance');
   if (!sheet) {
-    sheet = ss.insertSheet('Attendance');
-    sheet.appendRow([
-      'Emp ID',
-      'Name',
-      'Department',
-      'Type',
-      'Time',
-      'Date',
-      'Status',
-      'OT Hours',
-      'Latitude',
-      'Longitude',
-      'Google Map Link',
-      'Photo Link'
-    ]);
+    setupAndCreateSheets();
+    sheet = ss.getSheetByName('Attendance');
   }
 
   const now = new Date();
@@ -265,21 +321,13 @@ function getAttendance() {
   return list.reverse();
 }
 
-// --- 3. ส่วนจัดการ Config (GPS, เวลางาน, OT, และ Admin PIN) ---
+// --- ส่วนจัดการ Config (GPS, เวลางาน, OT, และ Admin PIN) ---
 function saveConfig(lat, lng, radius, workStartTime, otStartTime, adminPin) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('Config');
-
   if (!sheet) {
-    sheet = ss.insertSheet('Config');
-    sheet.getRange('A1:B1').setValues([['Parameter', 'Value']]);
-    sheet.getRange('A2').setValue('Target Latitude');
-    sheet.getRange('A3').setValue('Target Longitude');
-    sheet.getRange('A4').setValue('Allowed Radius (KM)');
-    sheet.getRange('A5').setValue('Work Start Time');
-    sheet.getRange('A6').setValue('OT Start Time');
-    sheet.getRange('A7').setValue('Admin PIN');
-    sheet.setColumnWidth(1, 180);
+    setupAndCreateSheets();
+    sheet = ss.getSheetByName('Config');
   }
 
   if (lat !== undefined) sheet.getRange('B2').setValue(lat);
