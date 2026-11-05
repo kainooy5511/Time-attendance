@@ -468,11 +468,15 @@
     modal.style.display = 'flex';
   }
 
-  // Register Service Worker
+  // Register Service Worker & Auto-Check for Updates
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('ServiceWorker registered:', reg.scope))
+        .then(reg => {
+          console.log('ServiceWorker registered:', reg.scope);
+          // สั่งตรวจสอบการอัปเดตเวอร์ชันใหม่จาก Netlify อัตโนมัติทุกครั้งที่เปิดแอป
+          reg.update();
+        })
         .catch(err => console.log('ServiceWorker error:', err));
     });
   }
