@@ -282,6 +282,17 @@
     <p class="subtitle" id="companySlogan">Face Recognition &amp; GPS Attendance System</p>
   </div>
 
+  <!-- LINE In-App Browser Detected Alert -->
+  <div id="lineAlert" style="display:none; background:rgba(245, 158, 11, 0.16); border:1.5px solid #f59e0b; color:#fde68a; border-radius:18px; padding:16px 18px; margin-bottom:20px; text-align:left; box-shadow:0 8px 25px rgba(245,158,11,0.25);">
+    <div style="font-weight:700; font-size:1.05em; margin-bottom:6px; color:#fbbf24; display:flex; align-items:center; gap:8px;">
+      <span>⚠️ กำลังเปิดในแอป LINE</span>
+    </div>
+    <div style="font-size:0.88em; line-height:1.5; color:#fef3c7;">
+      แอป LINE จะบล็อกการดึงไอคอนลงหน้าจอโฮมและกล้อง<br>
+      👉 <strong>วิธีปลดล็อค:</strong> แตะปุ่มจุด 3 จุด <strong>(⋮ หรือ 📤)</strong> ที่มุมขวาบนของหน้าจอ แล้วเลือก <strong>"เปิดด้วยเบราว์เซอร์อื่น" (Open in Safari / Chrome)</strong> ครับ
+    </div>
+  </div>
+
   <!-- Warning for Config -->
   <div id="apiWarning" class="api-warning">
     ⚠️ ยังไม่ได้ตั้งค่า API URL — <a href="config.html">ไปที่หน้าตั้งค่า</a>
@@ -345,64 +356,116 @@
   </div>
 </div>
 
-<!-- iOS Install Instruction Modal -->
-<div id="iosInstallModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
-  <div style="background:var(--card-bg); border:1px solid var(--card-border); max-width:380px; width:100%; border-radius:24px; padding:28px 24px; text-align:center; box-shadow:var(--shadow);">
-    <div style="font-size:48px; margin-bottom:12px;">📲</div>
-    <h3 style="font-size:1.25em; font-weight:700; margin-bottom:8px;">วิธีดึงแอปลงหน้าจอ iPhone / iPad</h3>
-    <p style="font-size:0.86em; color:var(--text-muted); margin-bottom:20px;">ทำตาม 3 ขั้นตอนง่ายๆ เพื่อใช้งานแบบเต็มจอเหมือนแอปจริง</p>
-    
-    <div style="text-align:left; font-size:0.9em; display:flex; flex-direction:column; gap:14px; background:rgba(255,255,255,0.04); padding:16px; border-radius:16px; margin-bottom:22px;">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="background:#6366f1; color:white; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8em;">1</span>
-        <span>แตะปุ่ม <strong>แชร์ (Share)</strong> 📤 ที่แถบล่างของ Safari</span>
+<!-- Dual Install Instruction Modal (iOS & Android) -->
+<div id="installGuideModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px;">
+  <div style="background:var(--card-bg); border:1px solid var(--card-border); max-width:420px; width:100%; border-radius:24px; padding:24px 20px; text-align:center; box-shadow:var(--shadow);">
+    <div style="font-size:42px; margin-bottom:8px;">📲</div>
+    <h3 style="font-size:1.2em; font-weight:700; margin-bottom:6px;">วิธีดึงแอปลงหน้าจอมือถือ</h3>
+    <p style="font-size:0.82em; color:var(--text-muted); margin-bottom:16px;">เพื่อเปิดใช้งานเต็มจอแบบ Native App โดยไม่ต้องเปิดผ่านเบราว์เซอร์</p>
+
+    <!-- Platform Tabs -->
+    <div style="display:flex; gap:8px; margin-bottom:16px; background:rgba(255,255,255,0.06); padding:4px; border-radius:14px;">
+      <button id="tabIos" onclick="switchGuideTab('ios')" style="flex:1; padding:8px; border-radius:10px; border:none; background:#6366f1; color:white; font-weight:600; font-size:0.86em; cursor:pointer;">🍎 iPhone / Safari</button>
+      <button id="tabAndroid" onclick="switchGuideTab('android')" style="flex:1; padding:8px; border-radius:10px; border:none; background:transparent; color:var(--text-muted); font-weight:600; font-size:0.86em; cursor:pointer;">🤖 Android / Chrome</button>
+    </div>
+
+    <!-- iOS Step Guide -->
+    <div id="guideIos" style="text-align:left; font-size:0.88em; display:flex; flex-direction:column; gap:12px; background:rgba(255,255,255,0.04); padding:16px; border-radius:16px; margin-bottom:20px;">
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <span style="background:#6366f1; color:white; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75em; margin-top:2px;">1</span>
+        <span>เปิดเว็บนี้ใน <strong>Safari</strong> (หากเปิดใน LINE ให้แตะจุด 3 จุดเพื่อเปิดใน Safari ก่อน)</span>
       </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="background:#6366f1; color:white; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8em;">2</span>
-        <span>เลื่อนลงมาเลือก ➕ <strong>"เพิ่มไปยังหน้าจอโฮม"</strong></span>
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <span style="background:#6366f1; color:white; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75em; margin-top:2px;">2</span>
+        <span>แตะปุ่ม <strong>แชร์ (Share)</strong> 📤 ที่แถบเมนูล่างสุดตรงกลาง</span>
       </div>
-      <div style="display:flex; align-items:center; gap:12px;">
-        <span style="background:#6366f1; color:white; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8em;">3</span>
-        <span>แตะปุ่ม <strong>"เพิ่ม" (Add)</strong> ที่มุมขวาบน</span>
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <span style="background:#6366f1; color:white; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75em; margin-top:2px;">3</span>
+        <span>เลื่อนลงมาเลือก ➕ <strong>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</strong></span>
+      </div>
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <span style="background:#6366f1; color:white; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75em; margin-top:2px;">4</span>
+        <span>แตะปุ่ม <strong>"เพิ่ม" (Add)</strong> มุมขวาบน เป็นอันเสร็จสิ้น!</span>
       </div>
     </div>
 
-    <button onclick="document.getElementById('iosInstallModal').style.display='none'" style="width:100%; padding:12px; border-radius:14px; background:linear-gradient(135deg, #6366f1, #3b82f6); color:white; font-weight:700; border:none; cursor:pointer;">เข้าใจแล้ว (ปิดหน้าต่าง)</button>
+    <!-- Android Step Guide -->
+    <div id="guideAndroid" style="display:none; text-align:left; font-size:0.88em; flex-direction:column; gap:12px; background:rgba(255,255,255,0.04); padding:16px; border-radius:16px; margin-bottom:20px;">
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <span style="background:#10b981; color:white; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75em; margin-top:2px;">1</span>
+        <span>เปิดเว็บนี้ใน <strong>Google Chrome</strong></span>
+      </div>
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <span style="background:#10b981; color:white; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75em; margin-top:2px;">2</span>
+        <span>แตะปุ่ม <strong>จุด 3 จุด (⋮)</strong> ที่มุมขวาบนของ Chrome</span>
+      </div>
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <span style="background:#10b981; color:white; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75em; margin-top:2px;">3</span>
+        <span>เลือกเมนู 📲 <strong>"ติดตั้งแอป"</strong> หรือ <strong>"เพิ่มลงในหน้าจอหลัก"</strong></span>
+      </div>
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <span style="background:#10b981; color:white; min-width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75em; margin-top:2px;">4</span>
+        <span>แตะ <strong>"ติดตั้ง" (Install)</strong> ไอคอนแอปจะไปอยู่ที่หน้าจอทันที!</span>
+      </div>
+    </div>
+
+    <button onclick="document.getElementById('installGuideModal').style.display='none'" style="width:100%; padding:12px; border-radius:14px; background:linear-gradient(135deg, #6366f1, #3b82f6); color:white; font-weight:700; border:none; cursor:pointer;">เข้าใจแล้ว (ปิดหน้าต่าง)</button>
   </div>
 </div>
 
 <script>
   let deferredPrompt = null;
 
+  function switchGuideTab(platform) {
+    const tabIos = document.getElementById('tabIos');
+    const tabAndroid = document.getElementById('tabAndroid');
+    const guideIos = document.getElementById('guideIos');
+    const guideAndroid = document.getElementById('guideAndroid');
+
+    if (platform === 'ios') {
+      tabIos.style.background = '#6366f1';
+      tabIos.style.color = '#ffffff';
+      tabAndroid.style.background = 'transparent';
+      tabAndroid.style.color = 'var(--text-muted)';
+      guideIos.style.display = 'flex';
+      guideAndroid.style.display = 'none';
+    } else {
+      tabAndroid.style.background = '#10b981';
+      tabAndroid.style.color = '#ffffff';
+      tabIos.style.background = 'transparent';
+      tabIos.style.color = 'var(--text-muted)';
+      guideAndroid.style.display = 'flex';
+      guideIos.style.display = 'none';
+    }
+  }
+
   // Listen for beforeinstallprompt event (Android / Chrome)
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    const banner = document.getElementById('pwaInstallCard');
-    if (banner) banner.style.display = 'flex';
   });
 
   function installPWA() {
     if (deferredPrompt) {
-      // Android / Chrome direct native install modal
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then((choiceResult) => {
         if (choiceResult.outcome === 'accepted') {
           console.log('User installed the PWA');
-          const banner = document.getElementById('pwaInstallCard');
-          if (banner) banner.style.display = 'none';
         }
         deferredPrompt = null;
       });
-    } else {
-      // iOS / Safari or desktop guide
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      if (isIOS) {
-        document.getElementById('iosInstallModal').style.display = 'flex';
-      } else {
-        alert('💡 สำหรับ Android: แตะปุ่มจุดสามจุด (⋮) มุมขวาบนของ Chrome แล้วเลือก "เพิ่มลงในหน้าจอหลัก" (Add to Home screen)\n\n💡 สำหรับ iPhone: แตะปุ่มแชร์ 📤 แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"');
-      }
+      return;
     }
+
+    // Show guide modal tailored to detected OS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const modal = document.getElementById('installGuideModal');
+    if (isIOS) {
+      switchGuideTab('ios');
+    } else {
+      switchGuideTab('android');
+    }
+    modal.style.display = 'flex';
   }
 
   // Register Service Worker
@@ -449,9 +512,19 @@
     if (savedSlogan) document.getElementById('companySlogan').innerText = savedSlogan;
   }
 
+  function checkLineBrowser() {
+    const ua = navigator.userAgent || '';
+    const isLine = /Line/i.test(ua);
+    const isFb = /FBAN|FBAV|Instagram/i.test(ua);
+    if (isLine || isFb) {
+      document.getElementById('lineAlert').style.display = 'block';
+    }
+  }
+
   window.addEventListener('load', () => {
     initTheme();
     loadBranding();
+    checkLineBrowser();
     const apiUrl = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
     if (!apiUrl) {
       document.getElementById('apiWarning').style.display = 'block';
