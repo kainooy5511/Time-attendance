@@ -1,7 +1,6 @@
 // ============================================================
-//  GOOGLE APPS SCRIPT — Enterprise Attendance API Backend V2
-//  รองรับ: รหัสพนักงาน, เข้า/ออกงาน, แผนก, สถานะตรงเวลา/สาย, และรูปถ่าย
-//  วิธีใช้: Deploy > Manage deployments > Edit > New version > Deploy
+//  GOOGLE APPS SCRIPT — Enterprise Attendance API Backend V3
+//  ฟังก์ชัน: แบ่งสิทธิ์ Admin/Employee, สแกนออโต้เข้า/ออก, คำนวณ OT หลัง 17:00, รายงาน Excel
 // ============================================================
 
 function doGet(e) {
@@ -37,7 +36,13 @@ function doPost(e) {
   let result;
 
   if (action === 'registerUser') {
-    result = registerUser(data.employeeId, data.name, data.department, data.faceDescriptor);
+    result = registerUser(
+      data.employeeId,
+      data.name,
+      data.department,
+      data.role,
+      data.faceDescriptor
+    );
   } else if (action === 'logAttendance') {
     result = logAttendance(
       data.name,
@@ -47,10 +52,18 @@ function doPost(e) {
       data.department,
       data.type,
       data.status,
+      data.otHours,
       data.photoBase64
     );
   } else if (action === 'saveConfig') {
-    result = saveConfig(data.lat, data.lng, data.radius, data.workStartTime);
+    result = saveConfig(
+      data.lat,
+      data.lng,
+      data.radius,
+      data.workStartTime,
+      data.otStartTime,
+      data.adminPin
+    );
   } else {
     result = { error: 'Unknown action: ' + action };
   }
@@ -60,24 +73,25 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// --- 1. ส่วนจัดการใบหน้าพนักงาน (Users) ---
-function registerUser(employeeId, name, department, faceDescriptor) {
+// --- 1. ส่วนจัดการใบหน้าและสิทธิ์พนักงาน (Users) ---
+function registerUser(employeeId, name, department, role, faceDescriptor) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Users');
   if (!sheet) {
     sheet = ss.insertSheet('Users');
-    sheet.appendRow(['Emp ID', 'Name', 'Department', 'Face Descriptor', 'Registered At']);
+    sheet.appendRow(['Emp ID', 'Name', 'Department', 'Role', 'Face Descriptor', 'Registered At']);
   }
 
   sheet.appendRow([
     employeeId || 'EMP' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMddHHmmss'),
     name,
     department || 'ทั่วไป',
+    role || 'พนักงานทั่วไป',
     JSON.stringify(faceDescriptor),
     new Date()
   ]);
 
-  return { success: true, message: 'ลงทะเบียนพนักงานและบันทึกใบหน้าเรียบร้อย' };
+  return { success: true, message: 'ลงทะเบียนพนักงานเรียบร้อย' };
 }
 
 function getKnownFaces() {
@@ -90,15 +104,22 @@ function getKnownFaces() {
 
   let users = [];
   for (let i = 1; i < data.length; i++) {
-    let empId = '', name = '', dept = '', jsonStr = '';
-    if (data[i].length >= 4) {
-      empId = data[i][0];
-      name = data[i][1];
-      dept = data[i][2];
-      jsonStr = data[i][3];
+    let empId = '', name = '', dept = '', role = 'พนักงานทั่วไป', jsonStr = '';
+    const row = data[i];
+    if (row.length >= 5) {
+      empId = row[0];
+      name = row[1];
+      dept = row[2];
+      role = row[3] || 'พนักงานทั่วไป';
+      jsonStr = row[4];
+    } else if (row.length === 4) {
+      empId = row[0];
+      name = row[1];
+      dept = row[2];
+      jsonStr = row[3];
     } else {
-      name = data[i][0];
-      jsonStr = data[i][1];
+      name = row[0];
+      jsonStr = row[1];
     }
 
     if (name && jsonStr) {
@@ -108,6 +129,7 @@ function getKnownFaces() {
           name: name,
           employeeId: empId,
           department: dept,
+          role: role,
           descriptor: JSON.parse(jsonStr)
         });
       } catch (e) {}
@@ -117,7 +139,7 @@ function getKnownFaces() {
 }
 
 // --- 2. ส่วนบันทึกเวลาเข้า-ออกงาน (Attendance) ---
-function logAttendance(name, lat, lng, employeeId, department, type, status, photoBase64) {
+function logAttendance(name, lat, lng, employeeId, department, type, status, otHours, photoBase64) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Attendance');
   if (!sheet) {
@@ -130,6 +152,7 @@ function logAttendance(name, lat, lng, employeeId, department, type, status, pho
       'Time',
       'Date',
       'Status',
+      'OT Hours',
       'Latitude',
       'Longitude',
       'Google Map Link',
@@ -170,6 +193,7 @@ function logAttendance(name, lat, lng, employeeId, department, type, status, pho
     timeStr,
     "'" + dateStr,
     status || 'ปกติ',
+    otHours || 0,
     lat || '-',
     lng || '-',
     mapLink,
@@ -190,7 +214,7 @@ function getAttendance() {
   let list = [];
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
-    if (row.length >= 10) {
+    if (row.length >= 11) {
       list.push({
         employeeId: row[0],
         name: row[1],
@@ -199,24 +223,25 @@ function getAttendance() {
         time: row[4],
         date: row[5],
         status: row[6],
-        lat: row[7],
-        lng: row[8],
-        mapLink: row[9],
-        photoLink: row[10] || '-'
+        otHours: row[7],
+        lat: row[8],
+        lng: row[9],
+        mapLink: row[10],
+        photoLink: row[11] || '-'
       });
     } else {
-      // Old 6-column format
       list.push({
-        employeeId: '-',
-        name: row[0],
-        department: '-',
-        type: 'เข้างาน (Check-In)',
-        time: row[1],
-        date: row[2],
-        status: 'ปกติ',
-        lat: row[3],
-        lng: row[4],
-        mapLink: row[5],
+        employeeId: row[0] || '-',
+        name: row[1] || row[0],
+        department: row[2] || '-',
+        type: row[3] || 'เข้างาน',
+        time: row[4] || row[1],
+        date: row[5] || row[2],
+        status: row[6] || 'ปกติ',
+        otHours: 0,
+        lat: row[7] || row[3] || '-',
+        lng: row[8] || row[4] || '-',
+        mapLink: row[9] || row[5] || '',
         photoLink: '-'
       });
     }
@@ -224,8 +249,8 @@ function getAttendance() {
   return list.reverse();
 }
 
-// --- 3. ส่วนจัดการ Config (GPS & กะเวลา) ---
-function saveConfig(lat, lng, radius, workStartTime) {
+// --- 3. ส่วนจัดการ Config (GPS & เวลางาน & รหัส Admin) ---
+function saveConfig(lat, lng, radius, workStartTime, otStartTime, adminPin) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('Config');
 
@@ -236,13 +261,17 @@ function saveConfig(lat, lng, radius, workStartTime) {
     sheet.getRange('A3').setValue('Target Longitude');
     sheet.getRange('A4').setValue('Allowed Radius (KM)');
     sheet.getRange('A5').setValue('Work Start Time');
-    sheet.setColumnWidth(1, 160);
+    sheet.getRange('A6').setValue('OT Start Time');
+    sheet.getRange('A7').setValue('Admin PIN');
+    sheet.setColumnWidth(1, 180);
   }
 
   if (lat !== undefined) sheet.getRange('B2').setValue(lat);
   if (lng !== undefined) sheet.getRange('B3').setValue(lng);
   if (radius !== undefined) sheet.getRange('B4').setValue(radius);
   if (workStartTime !== undefined) sheet.getRange('B5').setValue(workStartTime);
+  if (otStartTime !== undefined) sheet.getRange('B6').setValue(otStartTime);
+  if (adminPin !== undefined) sheet.getRange('B7').setValue(adminPin);
 
   return { success: true, message: 'บันทึกการตั้งค่าลง Google Sheets เรียบร้อย' };
 }
@@ -251,18 +280,29 @@ function getConfig() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Config');
 
-  let config = { lat: 0, lng: 0, radius: 0.5, workStartTime: '08:30' };
+  let config = {
+    lat: 0,
+    lng: 0,
+    radius: 0.5,
+    workStartTime: '08:30',
+    otStartTime: '17:00',
+    adminPin: '1234'
+  };
 
   if (sheet) {
     const latVal = sheet.getRange('B2').getValue();
     const lngVal = sheet.getRange('B3').getValue();
     const radiusVal = sheet.getRange('B4').getValue();
     const workTimeVal = sheet.getRange('B5').getValue();
+    const otTimeVal = sheet.getRange('B6').getValue();
+    const pinVal = sheet.getRange('B7').getValue();
 
     if (latVal !== '') config.lat = parseFloat(latVal);
     if (lngVal !== '') config.lng = parseFloat(lngVal);
     if (radiusVal !== '') config.radius = parseFloat(radiusVal);
     if (workTimeVal !== '') config.workStartTime = String(workTimeVal);
+    if (otTimeVal !== '') config.otStartTime = String(otTimeVal);
+    if (pinVal !== '') config.adminPin = String(pinVal);
   }
 
   return config;

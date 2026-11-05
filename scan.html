@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>สแกนลงเวลา — Smart Attendance</title>
+  <title>สแกนลงเวลาอัตโนมัติ — Smart Attendance</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.js"></script>
@@ -86,48 +86,21 @@
       font-size: 1.1em; cursor: pointer; backdrop-filter: blur(12px);
     }
 
-    /* Type Selector Pills */
-    .type-selector {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+    /* Auto Mode Badge */
+    .mode-indicator {
+      display: flex;
+      align-items: center;
       gap: 8px;
-      width: 100%;
-      margin-bottom: 16px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      padding: 6px;
-      border-radius: 16px;
-      backdrop-filter: blur(12px);
-    }
-
-    .type-pill {
-      padding: 10px 6px;
-      border-radius: 12px;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 0.88em;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82em;
       font-weight: 600;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      text-align: center;
-    }
-    .type-pill.active {
-      background: var(--accent);
-      color: white;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-    }
-    .type-pill.active.out {
-      background: #ef4444;
-      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-    }
-    .type-pill.active.ot {
-      background: #f59e0b;
-      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+      margin-bottom: 14px;
     }
 
-    /* Status Area */
     .status-area {
       text-align: center;
       margin-bottom: 14px;
@@ -150,7 +123,7 @@
       line-height: 1.5;
     }
 
-    /* Camera Container */
+    /* Camera View */
     .video-container {
       position: relative;
       width: 100%;
@@ -166,7 +139,6 @@
       transform: scaleX(-1);
     }
 
-    /* Frame Overlay */
     .scanner-frame {
       position: absolute; inset: 0; pointer-events: none; z-index: 5;
     }
@@ -217,7 +189,7 @@
       padding: 20px;
     }
     .modal-content {
-      width: 100%; max-width: 380px;
+      width: 100%; max-width: 390px;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 24px;
@@ -227,27 +199,35 @@
       backdrop-filter: blur(20px);
     }
     .snapshot-thumb {
-      width: 88px; height: 88px; border-radius: 50%;
+      width: 90px; height: 90px; border-radius: 50%;
       object-fit: cover; margin: 0 auto 12px;
       border: 3px solid #10b981;
       box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
     }
-    .modal-title { font-size: 1.15em; font-weight: 700; margin-bottom: 2px; }
-    .modal-name  { font-size: 1.35em; font-weight: 700; color: #38bdf8; margin-bottom: 8px; }
-    
+    .modal-title { font-size: 1.1em; font-weight: 700; margin-bottom: 2px; }
+    .modal-name  { font-size: 1.4em; font-weight: 700; color: #38bdf8; margin-bottom: 6px; }
+
+    .detected-type {
+      font-size: 1.15em; font-weight: 700; padding: 6px 14px; border-radius: 14px;
+      display: inline-block; margin-bottom: 12px;
+    }
+    .type-in-badge  { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .type-out-badge { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
     .meta-badges {
       display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
       margin-bottom: 14px;
     }
     .meta-badge {
-      font-size: 0.78em; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+      font-size: 0.8em; font-weight: 600; padding: 4px 10px; border-radius: 20px;
       background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border);
     }
-    .meta-badge.status-on-time { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-    .meta-badge.status-late    { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .meta-badge.ot-badge {
+      background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4);
+    }
 
     .modal-time {
-      font-size: 1.1em; font-weight: 600; color: var(--text-main); margin-bottom: 16px;
+      font-size: 1.05em; font-weight: 600; color: var(--text-main); margin-bottom: 16px;
     }
 
     .btn-confirm {
@@ -273,11 +253,8 @@
     <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">🌙</button>
   </div>
 
-  <!-- Type Selector Pills -->
-  <div class="type-selector">
-    <button class="type-pill active" id="pillIn" onclick="setAttendanceType('เข้างาน (Check-In)')">🟢 เข้างาน</button>
-    <button class="type-pill out" id="pillOut" onclick="setAttendanceType('ออกงาน (Check-Out)')">🔴 ออกงาน</button>
-    <button class="type-pill ot" id="pillOt" onclick="setAttendanceType('ล่วงเวลา (OT)')">⏱️ OT</button>
+  <div class="mode-indicator">
+    ⚡ ระบบสแกนอัจฉริยะ (ตรวจจับ เข้า/ออก/OT อัตโนมัติ)
   </div>
 
   <div class="status-area">
@@ -300,21 +277,23 @@
     <video id="video" autoplay muted playsinline></video>
   </div>
 
-  <button id="btnStart" class="btn-start" onclick="startCamera()">📷 แตะเพื่อเริ่มสแกน</button>
+  <button id="btnStart" class="btn-start" onclick="startCamera()">📷 แตะเพื่อเริ่มสแกนใบหน้า</button>
 </div>
 
 <!-- Modal Confirm -->
 <div id="confirmModal" class="modal-overlay">
   <div class="modal-content">
     <img id="modalSnapshot" class="snapshot-thumb" src="" alt="Snapshot">
-    <p class="modal-title">ตรวจพบบุคคล</p>
+    <p class="modal-title">ผลการตรวจจับอัตโนมัติ</p>
     <div class="modal-name" id="modalName">...</div>
+
+    <div id="modalDetectedType" class="detected-type type-in-badge">🟢 เข้างาน (ครั้งที่ 1 ของวัน)</div>
 
     <div class="meta-badges">
       <span class="meta-badge" id="modalEmpId">EMP001</span>
       <span class="meta-badge" id="modalDept">ฝ่ายทั่วไป</span>
-      <span class="meta-badge" id="modalTypeBadge">เข้างาน</span>
       <span class="meta-badge" id="modalStatusBadge">ตรงเวลา</span>
+      <span class="meta-badge ot-badge" id="modalOtBadge" style="display:none;">OT: 0 ชม.</span>
     </div>
 
     <div class="modal-time" id="modalTime">เวลา: 00:00:00 น.</div>
@@ -325,7 +304,6 @@
 </div>
 
 <script>
-  // Theme Management
   function initTheme() {
     const saved = localStorage.getItem('app_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
@@ -351,24 +329,21 @@
 
   const MATCH_THRESHOLD = 0.45;
 
-  let currentType = 'เข้างาน (Check-In)';
   let workStartTime = '08:30';
-  let knownFaces   = [];
-  let scanInterval = null;
-  let currentMatch = null;
+  let otStartTime   = '17:00';
+  let knownFaces    = [];
+  let todayLogs     = [];
+  let scanInterval  = null;
+  let currentMatch  = null;
   let currentSnapshot = '';
-  let currentLat   = null;
-  let currentLng   = null;
+  let currentLat    = null;
+  let currentLng    = null;
 
-  function setAttendanceType(type) {
-    currentType = type;
-    document.querySelectorAll('.type-pill').forEach(btn => btn.classList.remove('active'));
-    if (type.includes('Check-In')) document.getElementById('pillIn').classList.add('active');
-    else if (type.includes('Check-Out')) document.getElementById('pillOut').classList.add('active');
-    else document.getElementById('pillOt').classList.add('active');
-  }
+  // Auto-calculated fields
+  let resolvedType    = 'เข้างาน (Check-In)';
+  let resolvedStatus  = 'ตรงเวลา';
+  let resolvedOtHours = 0;
 
-  // Haversine GPS Distance in KM
   function haversineKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -399,6 +374,7 @@
           try {
             const config = await fetch(API_URL + '?action=getConfig').then(r => r.json());
             if (config.workStartTime) workStartTime = config.workStartTime;
+            if (config.otStartTime)   otStartTime   = config.otStartTime;
 
             if (!config.lat || !config.lng || config.radius == 0) {
               gpsStatus.innerHTML = '<span style="color:#34d399">📍 GPS: ไม่จำกัดพื้นที่</span>';
@@ -427,7 +403,7 @@
   }
 
   async function initFaceSystem() {
-    mainStatus.innerText = '2/4 กำลังโหลดโมเดล AI Face Recognition...';
+    mainStatus.innerText = '2/4 โหลด AI Face Recognition...';
     const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
     try {
       await Promise.all([
@@ -435,29 +411,47 @@
         faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
         faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
       ]);
-      loadKnownFaces();
+      loadData();
     } catch(e) {
       showError('โหลดโมเดล AI ไม่สำเร็จ: ' + e.message);
     }
   }
 
-  async function loadKnownFaces() {
-    mainStatus.innerText = '3/4 กำลังดึงฐานข้อมูลพนักงานจาก Google Sheets...';
+  async function loadData() {
+    mainStatus.innerText = '3/4 ซิงก์ฐานข้อมูลพนักงานและประวัติวันนี้...';
     try {
-      const res = await fetch(API_URL + '?action=getKnownFaces');
-      const users = await res.json();
-      knownFaces = users.map(u => ({
+      const [usersRes, attRes] = await Promise.all([
+        fetch(API_URL + '?action=getKnownFaces').then(r => r.json()),
+        fetch(API_URL + '?action=getAttendance').then(r => r.json()).catch(() => [])
+      ]);
+
+      knownFaces = usersRes.map(u => ({
         name: u.name || u.label,
         employeeId: u.employeeId || 'EMP',
         department: u.department || 'ทั่วไป',
+        role: u.role || 'พนักงานทั่วไป',
         descriptor: new Float32Array(u.descriptor)
       }));
 
-      mainStatus.innerText = '✅ พร้อมแล้ว! มีพนักงานในระบบ ' + knownFaces.length + ' คน';
+      // Cache today's logs
+      const todayDate = new Date().toLocaleDateString('th-TH');
+      todayLogs = (attRes || []).filter(item => item.date && String(item.date).includes(new Date().getDate()));
+
+      // Merge local logs for today
+      try {
+        const localLogs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
+        localLogs.forEach(loc => {
+          if (!todayLogs.some(r => r.name === loc.name && r.time === loc.time)) {
+            todayLogs.push(loc);
+          }
+        });
+      } catch(e) {}
+
+      mainStatus.innerText = '✅ พร้อมแล้ว! มีพนักงาน ' + knownFaces.length + ' คน';
       overlayStatus.innerText = 'พร้อมสแกน';
       btnStart.style.display = 'flex';
     } catch(e) {
-      showError('ดึงข้อมูลพนักงานไม่สำเร็จ: ' + e.message);
+      showError('ดึงข้อมูลไม่สำเร็จ: ' + e.message);
     }
   }
 
@@ -467,9 +461,7 @@
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } })
       .then(stream => {
         video.srcObject = stream;
-        video.onloadedmetadata = () => {
-          startScanning();
-        };
+        video.onloadedmetadata = () => { startScanning(); };
       })
       .catch(err => showError('เปิดกล้องไม่ได้: ' + err.message));
   }
@@ -504,6 +496,7 @@
           name: u.name,
           employeeId: u.employeeId,
           department: u.department,
+          role: u.role,
           distance: d
         };
       }
@@ -514,12 +507,11 @@
   function showModal(match) {
     currentMatch = match;
 
-    // Capture Snapshot Thumbnail from Video
+    // Capture Snapshot Thumbnail
     try {
       const canvas = document.createElement('canvas');
       canvas.width = 240; canvas.height = 240;
       const ctx = canvas.getContext('2d');
-      // Mirror snapshot horizontally
       ctx.translate(240, 0); ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, 240, 240);
       currentSnapshot = canvas.toDataURL('image/jpeg', 0.65);
@@ -531,29 +523,77 @@
     document.getElementById('modalName').innerText  = match.name;
     document.getElementById('modalEmpId').innerText = 'ID: ' + (match.employeeId || 'EMP');
     document.getElementById('modalDept').innerText  = match.department || 'ทั่วไป';
-    document.getElementById('modalTypeBadge').innerText = currentType;
 
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    document.getElementById('modalTime').innerText  = 'เวลา: ' + timeStr + ' น.';
+    const currentHour = now.getHours();
+    const currentMin  = now.getMinutes();
+    const currentTotalMin = currentHour * 60 + currentMin;
 
-    // Calculate Status (ตรงเวลา / สาย)
-    let statusBadge = document.getElementById('modalStatusBadge');
-    if (currentType.includes('Check-In')) {
-      const [limitH, limitM] = workStartTime.split(':').map(Number);
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const limitMinutes   = (limitH || 8) * 60 + (limitM || 30);
-      if (currentMinutes > limitMinutes) {
-        const diff = currentMinutes - limitMinutes;
-        statusBadge.innerText = 'สาย (' + diff + ' นาที)';
-        statusBadge.className = 'meta-badge status-late';
+    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('modalTime').innerText = 'เวลา: ' + timeStr + ' น.';
+
+    // Check if this employee already scanned today
+    const employeeScansToday = todayLogs.filter(log =>
+      log.name === match.name || (match.employeeId && log.employeeId === match.employeeId)
+    );
+
+    const typeBadge = document.getElementById('modalDetectedType');
+    const statusBadge = document.getElementById('modalStatusBadge');
+    const otBadge = document.getElementById('modalOtBadge');
+    otBadge.style.display = 'none';
+
+    if (employeeScansToday.length === 0) {
+      // ครั้งแรกของวัน -> "เข้างาน (Check-In)"
+      resolvedType = 'เข้างาน (Check-In)';
+      typeBadge.innerText = '🟢 เข้างาน (ครั้งที่ 1 ของวัน)';
+      typeBadge.className = 'detected-type type-in-badge';
+
+      // คำนวณมาสาย
+      const [limitH, limitM] = (workStartTime || '08:30').split(':').map(Number);
+      const limitTotalMin = (limitH || 8) * 60 + (limitM || 30);
+
+      if (currentTotalMin > limitTotalMin) {
+        const diff = currentTotalMin - limitTotalMin;
+        resolvedStatus = 'สาย (' + diff + ' นาที)';
+        statusBadge.innerText = resolvedStatus;
+        statusBadge.style.color = '#f87171';
       } else {
+        resolvedStatus = 'ตรงเวลา';
         statusBadge.innerText = 'ตรงเวลา';
-        statusBadge.className = 'meta-badge status-on-time';
+        statusBadge.style.color = '#34d399';
       }
+      resolvedOtHours = 0;
     } else {
-      statusBadge.innerText = 'ปกติ';
-      statusBadge.className = 'meta-badge status-on-time';
+      // ครั้งที่ 2 ของวันขึ้นไป -> "ออกงาน (Check-Out)"
+      resolvedType = 'ออกงาน (Check-Out)';
+      typeBadge.innerText = '🔴 ออกงาน (ครั้งที่ ' + (employeeScansToday.length + 1) + ' ของวัน)';
+      typeBadge.className = 'detected-type type-out-badge';
+
+      // คำนวณ OT หลัง 17:00 (5 โมงเย็น) - นับเฉพาะชั่วโมงเต็ม ไม่นับเศษนาที
+      const [otH, otM] = (otStartTime || '17:00').split(':').map(Number);
+      const otStartTotalMin = (otH || 17) * 60 + (otM || 0);
+
+      if (currentTotalMin > otStartTotalMin) {
+        const otDiffMinutes = currentTotalMin - otStartTotalMin;
+        // ไม่นับนาที ปัดเป็นชั่วโมงเต็มเท่านั้น (Floor)
+        const fullOtHours = Math.floor(otDiffMinutes / 60);
+
+        if (fullOtHours >= 1) {
+          resolvedOtHours = fullOtHours;
+          resolvedStatus = 'เลิกงาน + OT ' + fullOtHours + ' ชม.';
+          otBadge.innerText = '⏱️ OT: ' + fullOtHours + ' ชั่วโมงเต็ม';
+          otBadge.style.display = 'inline-block';
+        } else {
+          resolvedOtHours = 0;
+          resolvedStatus = 'ออกงานปกติ (OT ยังไม่ครบ 1 ชม.)';
+        }
+      } else {
+        resolvedOtHours = 0;
+        resolvedStatus = 'ออกงานปกติ';
+      }
+
+      statusBadge.innerText = resolvedStatus;
+      statusBadge.style.color = '#38bdf8';
     }
 
     confirmModal.style.display = 'flex';
@@ -564,26 +604,30 @@
     btn.disabled  = true;
     btn.innerText = '⏳ กำลังบันทึกข้อมูล...';
 
-    const statusText = document.getElementById('modalStatusBadge').innerText;
     const now = new Date();
+    const dateStr = now.toLocaleDateString('th-TH');
+    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    // บันทึกลง Local Cache ทันที เพื่อให้แสดงผลในหน้า history.html ทันที
+    // บันทึกลง local cache ทันที
     try {
       const localLogs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
-      localLogs.unshift({
+      const newRecord = {
         employeeId: currentMatch.employeeId || 'EMP',
         name: currentMatch.name,
         department: currentMatch.department || 'ทั่วไป',
-        type: currentType,
-        time: now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        date: now.toLocaleDateString('th-TH'),
-        status: statusText,
+        type: resolvedType,
+        time: timeStr,
+        date: dateStr,
+        status: resolvedStatus,
+        otHours: resolvedOtHours,
         lat: currentLat,
         lng: currentLng,
         mapLink: (currentLat && currentLng) ? `https://www.google.com/maps?q=${currentLat},${currentLng}` : '',
         photoLink: currentSnapshot || '-'
-      });
+      };
+      localLogs.unshift(newRecord);
       localStorage.setItem('localAttendanceLogs', JSON.stringify(localLogs.slice(0, 100)));
+      localStorage.setItem('last_scanned_empid', currentMatch.employeeId);
     } catch(e) {}
 
     try {
@@ -594,18 +638,19 @@
           employeeId: currentMatch.employeeId || 'EMP',
           name: currentMatch.name,
           department: currentMatch.department || 'ทั่วไป',
-          type: currentType,
-          status: statusText,
+          type: resolvedType,
+          status: resolvedStatus,
+          otHours: resolvedOtHours,
           lat: currentLat,
           lng: currentLng,
           photoBase64: currentSnapshot
         })
       });
       const data = await res.json();
-      alert('✅ ' + (data.message || 'บันทึกเวลาสำเร็จ'));
+      alert('✅ ' + (data.message || 'บันทึกเวลาสำเร็จ') + '\nประเภท: ' + resolvedType + '\nสถานะ: ' + resolvedStatus);
       window.location.href = 'history.html';
     } catch(e) {
-      alert('✅ บันทึกลงในเครื่องเรียบร้อย (ระบบจะซิงก์ Sheets ภายหลัง)');
+      alert('✅ บันทึกเวลาลงในเครื่องเรียบร้อย (ระบบจะซิงก์ Sheets ภายหลัง)');
       window.location.href = 'history.html';
     }
   }

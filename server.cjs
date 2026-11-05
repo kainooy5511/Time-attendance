@@ -19,7 +19,9 @@ function initDb() {
         lat: 13.7563,
         lng: 100.5018,
         radius: 0.1,
-        workStartTime: '08:30'
+        workStartTime: '08:30',
+        otStartTime: '17:00',
+        adminPin: '1234'
       },
       users: [],
       attendance: []
@@ -90,7 +92,9 @@ app.post('/api/gas', (req, res) => {
       employeeId: data.employeeId || 'EMP',
       name: data.name,
       department: data.department || 'ทั่วไป',
+      role: data.role || 'พนักงานทั่วไป',
       type: data.type || 'เข้างาน (Check-In)',
+      otHours: data.otHours || 0,
       status: data.status || 'ปกติ',
       time: timeStr,
       date: dateStr,

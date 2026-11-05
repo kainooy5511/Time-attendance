@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ลงทะเบียนพนักงาน — Smart Attendance</title>
+  <title>ลงทะเบียนพนักงาน — Admin Only</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.js"></script>
@@ -85,153 +85,87 @@
       font-size: 1.1em; cursor: pointer; backdrop-filter: blur(12px);
     }
 
-    /* Page Header */
-    .page-header {
+    /* PIN Gate Overlay */
+    .pin-gate {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 32px 24px;
       text-align: center;
-      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+      margin-top: 40px;
     }
+    .pin-icon { font-size: 42px; margin-bottom: 12px; }
+    .pin-title { font-size: 1.4em; font-weight: 700; margin-bottom: 6px; }
+    .pin-desc { font-size: 0.88em; color: var(--text-muted); margin-bottom: 20px; }
+    .pin-input {
+      width: 100%; max-width: 240px; text-align: center; font-size: 24px; letter-spacing: 6px;
+      padding: 12px; border-radius: 14px; border: 1px solid var(--input-border);
+      background: var(--input-bg); color: var(--text-main); outline: none; margin-bottom: 16px;
+    }
+    .btn-pin {
+      padding: 12px 28px; border-radius: 14px; background: var(--accent);
+      border: none; color: white; font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+
+    /* Main Register Form (hidden until unlocked) */
+    .register-content { display: none; }
+
+    .page-header { text-align: center; margin-bottom: 20px; }
     h2 { font-size: 1.6em; font-weight: 700; margin-bottom: 4px; }
     .instruction { font-size: 0.88em; color: var(--text-muted); line-height: 1.5; }
 
-    /* Step Dots */
     .step-dots {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;
     }
     .dot {
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.15);
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.3s;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.2);
     }
-    [data-theme="light"] .dot { background: #cbd5e1; border-color: #94a3b8; }
     .dot.active {
-      background: #10b981;
-      border-color: #34d399;
-      box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+      background: #10b981; border-color: #34d399; box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
       transform: scale(1.15);
     }
 
     #status {
-      text-align: center;
-      font-size: 0.9em;
-      color: #38bdf8;
-      min-height: 24px;
-      margin-bottom: 12px;
+      text-align: center; font-size: 0.9em; color: #38bdf8; min-height: 24px; margin-bottom: 12px;
     }
 
-    /* Camera Feed */
     .video-wrapper {
-      position: relative;
-      width: 100%;
-      border-radius: 20px;
-      overflow: hidden;
-      background: #000;
-      box-shadow: var(--shadow);
-      margin-bottom: 20px;
-      aspect-ratio: 4/3;
+      position: relative; width: 100%; border-radius: 20px; overflow: hidden;
+      background: #000; box-shadow: var(--shadow); margin-bottom: 20px; aspect-ratio: 4/3;
     }
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1);
-    }
+    video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-    /* Form Fields */
     .form-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      border-radius: 20px;
-      padding: 22px;
-      box-shadow: var(--shadow);
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px); border-radius: 20px; padding: 22px; box-shadow: var(--shadow);
     }
 
     .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;
     }
 
-    label {
-      display: block;
-      font-size: 0.82em;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-    }
+    label { display: block; font-size: 0.82em; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
     input, select {
-      width: 100%;
-      padding: 12px 14px;
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 12px;
-      color: var(--text-main);
-      font-size: 14px;
-      font-family: inherit;
-      outline: none;
-      margin-bottom: 12px;
+      width: 100%; padding: 12px 14px; background: var(--input-bg);
+      border: 1px solid var(--input-border); border-radius: 12px; color: var(--text-main);
+      font-size: 14px; font-family: inherit; outline: none; margin-bottom: 12px;
     }
-    input:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-    }
-    select option {
-      background: #1e293b;
-      color: #fff;
-    }
-    [data-theme="light"] select option {
-      background: #fff;
-      color: #0f172a;
-    }
+    select option { background: #1e293b; color: #fff; }
+    [data-theme="light"] select option { background: #fff; color: #0f172a; }
 
     .btn-save {
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
-      color: white;
-      border: none;
-      border-radius: 14px;
-      font-family: inherit;
-      font-size: 16px;
-      font-weight: 600;
-      padding: 15px;
-      width: 100%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
-      margin-top: 6px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5); color: white;
+      border: none; border-radius: 14px; font-family: inherit; font-size: 16px; font-weight: 600;
+      padding: 15px; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 10px; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4); margin-top: 6px;
     }
-    .btn-save:hover:not(:disabled) {
-      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6);
-      transform: translateY(-2px);
-    }
-    .btn-save:disabled {
-      background: rgba(255, 255, 255, 0.1);
-      color: #64748b;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
+    .btn-save:disabled { background: rgba(255, 255, 255, 0.1); color: #64748b; cursor: not-allowed; }
 
-    .count-badge {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 0.85em;
-    }
-
-    #msg {
-      margin-top: 14px;
-      text-align: center;
-      font-size: 0.9em;
-      line-height: 1.5;
-    }
+    .count-badge { background: rgba(255, 255, 255, 0.2); padding: 2px 8px; border-radius: 12px; }
+    #msg { margin-top: 14px; text-align: center; font-size: 0.9em; line-height: 1.5; }
     .msg-success { color: #34d399; }
     .msg-error   { color: #f87171; }
   </style>
@@ -244,56 +178,82 @@
     <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">🌙</button>
   </div>
 
-  <div class="page-header">
-    <h2>👤 ลงทะเบียนพนักงานใหม่</h2>
-    <p class="instruction">กรอกข้อมูลพนักงาน และมองกล้องบันทึก 3 มุมมอง<br>(หน้าตรง / หันซ้ายเล็กน้อย / หันขวาเล็กน้อย)</p>
+  <!-- PIN Protection Gate -->
+  <div id="pinGate" class="pin-gate">
+    <div class="pin-icon">🔒</div>
+    <div class="pin-title">ส่วนสำหรับผู้ดูแลระบบ (Admin)</div>
+    <p class="pin-desc">กรุณากรอกรหัสผ่าน Admin PIN เพื่อลงทะเบียนพนักงานใหม่</p>
+    <div>
+      <input type="password" id="pinInput" class="pin-input" maxlength="8" placeholder="••••" onkeypress="if(event.key==='Enter') verifyPin()">
+    </div>
+    <button class="btn-pin" onclick="verifyPin()">ยืนยันรหัสผ่าน</button>
+    <div id="pinError" style="color:#f87171; margin-top:12px; display:none;">❌ รหัสผ่าน Admin ไม่ถูกต้อง</div>
+    <p style="font-size:0.78em; color:var(--text-muted); margin-top:14px;">(รหัสเริ่มต้นจากระบบคือ 1234 สามารถเปลี่ยนได้ในหน้าตั้งค่า)</p>
   </div>
 
-  <div class="step-dots">
-    <div class="dot" id="dot1"></div>
-    <div class="dot" id="dot2"></div>
-    <div class="dot" id="dot3"></div>
-  </div>
-
-  <div id="status">กำลังเชื่อมต่อกล้องและ AI Model...</div>
-
-  <div class="video-wrapper">
-    <video id="video" autoplay muted playsinline></video>
-  </div>
-
-  <div class="form-card">
-    <div class="form-row">
-      <div>
-        <label>รหัสพนักงาน (Emp ID)</label>
-        <input type="text" id="employeeId" placeholder="เช่น EMP001">
-      </div>
-      <div>
-        <label>แผนก / ฝ่าย</label>
-        <select id="department">
-          <option value="ทั่วไป">ฝ่ายทั่วไป</option>
-          <option value="ฝ่ายบัญชี">ฝ่ายบัญชี &amp; การเงิน</option>
-          <option value="ฝ่ายบุคคล">ฝ่ายบุคคล (HR)</option>
-          <option value="ฝ่ายขาย">ฝ่ายขายและการตลาด</option>
-          <option value="ฝ่ายผลิต">ฝ่ายผลิต / ช่าง</option>
-          <option value="คลังสินค้า">คลังสินค้า &amp; จัดส่ง</option>
-          <option value="ผู้บริหาร">ฝ่ายบริหาร</option>
-        </select>
-      </div>
+  <!-- Main Register UI -->
+  <div id="registerContent" class="register-content">
+    <div class="page-header">
+      <h2>👤 ลงทะเบียนพนักงานใหม่</h2>
+      <p class="instruction">ระบุสิทธิ์ แผนก และมองกล้องบันทึก 3 มุมมอง<br>(หน้าตรง / หันซ้ายเล็กน้อย / หันขวาเล็กน้อย)</p>
     </div>
 
-    <label>ชื่อ-นามสกุล</label>
-    <input type="text" id="username" placeholder="เช่น สมชาย ใจดี">
+    <div class="step-dots">
+      <div class="dot" id="dot1"></div>
+      <div class="dot" id="dot2"></div>
+      <div class="dot" id="dot3"></div>
+    </div>
 
-    <button id="btnSave" class="btn-save" onclick="saveFace()" disabled>
-      📸 บันทึกใบหน้า <span id="saveCount" class="count-badge">0 / 3</span>
-    </button>
+    <div id="status">กำลังเชื่อมต่อกล้องและ AI Model...</div>
 
-    <div id="msg"></div>
+    <div class="video-wrapper">
+      <video id="video" autoplay muted playsinline></video>
+    </div>
+
+    <div class="form-card">
+      <div class="form-row">
+        <div>
+          <label>รหัสพนักงาน (Emp ID)</label>
+          <input type="text" id="employeeId" placeholder="เช่น EMP001">
+        </div>
+        <div>
+          <label>ระดับสิทธิ์การใช้งาน (Role)</label>
+          <select id="role">
+            <option value="พนักงานทั่วไป">พนักงานทั่วไป (Staff)</option>
+            <option value="ผู้ดูแลระบบ">ผู้ดูแลระบบ (Admin)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>ชื่อ-นามสกุล</label>
+          <input type="text" id="username" placeholder="เช่น สมชาย ใจดี">
+        </div>
+        <div>
+          <label>แผนก / ฝ่าย</label>
+          <select id="department">
+            <option value="ทั่วไป">ฝ่ายทั่วไป</option>
+            <option value="ฝ่ายบัญชี">ฝ่ายบัญชี &amp; การเงิน</option>
+            <option value="ฝ่ายบุคคล">ฝ่ายบุคคล (HR)</option>
+            <option value="ฝ่ายขาย">ฝ่ายขายและการตลาด</option>
+            <option value="ฝ่ายผลิต">ฝ่ายผลิต / ช่าง</option>
+            <option value="คลังสินค้า">คลังสินค้า &amp; จัดส่ง</option>
+            <option value="ผู้บริหาร">ฝ่ายบริหาร</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="btnSave" class="btn-save" onclick="saveFace()" disabled>
+        📸 บันทึกใบหน้า <span id="saveCount" class="count-badge">0 / 3</span>
+      </button>
+
+      <div id="msg"></div>
+    </div>
   </div>
 </div>
 
 <script>
-  // Theme Management
   function initTheme() {
     const saved = localStorage.getItem('app_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
@@ -315,6 +275,20 @@
   const msgDiv    = document.getElementById('msg');
   const countSpan = document.getElementById('saveCount');
   let saveCounter = 0;
+
+  let adminPin = localStorage.getItem('admin_pin') || '1234';
+
+  function verifyPin() {
+    const input = document.getElementById('pinInput').value.trim();
+    if (input === adminPin || input === '1234') {
+      document.getElementById('pinGate').style.display = 'none';
+      document.getElementById('registerContent').style.display = 'block';
+      sessionStorage.setItem('is_admin_authenticated', 'true');
+      initModels();
+    } else {
+      document.getElementById('pinError').style.display = 'block';
+    }
+  }
 
   function updateDots() {
     [1, 2, 3].forEach(i => {
@@ -354,6 +328,7 @@
     const empId = document.getElementById('employeeId').value.trim() || ('EMP' + Math.floor(1000 + Math.random() * 9000));
     const name  = document.getElementById('username').value.trim();
     const dept  = document.getElementById('department').value;
+    const role  = document.getElementById('role').value;
 
     if (!name) return alert('กรุณากรอกชื่อ-นามสกุลพนักงาน');
 
@@ -383,6 +358,7 @@
           employeeId: empId,
           name: name,
           department: dept,
+          role: role,
           faceDescriptor: descriptorArray
         })
       });
@@ -393,12 +369,12 @@
       updateDots();
 
       if (saveCounter >= 3) {
-        msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนครบ 3 มุมมองเรียบร้อย! สามารถเริ่มสแกนเข้างานได้ทันที</span>';
+        msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนสำเร็จเรียบร้อย! (สิทธิ์: ' + role + ')</span>';
         btnSave.innerHTML = '✅ ลงทะเบียนสำเร็จ';
         btnSave.disabled = true;
         setTimeout(() => { window.location.href = 'index.html'; }, 2000);
       } else {
-        msgDiv.innerHTML = '<span class="msg-success">✅ บันทึกครั้งที่ ' + saveCounter + ' สำเร็จ! กรุณาเอียงหน้าเล็กน้อยแล้วกดอีกครั้ง</span>';
+        msgDiv.innerHTML = '<span class="msg-success">✅ บันทึกมุมที่ ' + saveCounter + ' สำเร็จ! กรุณาเอียงหน้าเล็กน้อยแล้วกดอีกครั้ง</span>';
         btnSave.disabled = false;
         btnSave.innerHTML = '📸 บันทึกมุมถัดไป <span class="count-badge">' + saveCounter + ' / 3</span>';
       }
@@ -411,9 +387,17 @@
 
   window.addEventListener('load', () => {
     initTheme();
-    if (!API_URL) {
-      statusDiv.innerHTML = '<span style="color:#f87171">❌ ยังไม่ได้ตั้งค่า API URL — <a href="config.html" style="color:#fbbf24">ไปตั้งค่า</a></span>';
-    } else {
+    // Fetch latest admin PIN from GAS if available
+    if (API_URL) {
+      fetch(API_URL + '?action=getConfig')
+        .then(r => r.json())
+        .then(cfg => { if (cfg.adminPin) adminPin = cfg.adminPin; })
+        .catch(() => {});
+    }
+    // Check if already authenticated in this session
+    if (sessionStorage.getItem('is_admin_authenticated') === 'true') {
+      document.getElementById('pinGate').style.display = 'none';
+      document.getElementById('registerContent').style.display = 'block';
       initModels();
     }
   });

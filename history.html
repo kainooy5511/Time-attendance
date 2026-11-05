@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ประวัติการลงเวลา — Smart Attendance</title>
+  <title>ประวัติและรายงานการลงเวลา — Smart Attendance</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
+  <!-- SheetJS Library for genuine Excel (.xlsx) export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg-gradient: linear-gradient(135deg, #090d16 0%, #111827 50%, #0b1329 100%);
@@ -51,7 +53,7 @@
 
     .container {
       width: 100%;
-      max-width: 600px;
+      max-width: 680px;
       position: relative;
       z-index: 1;
     }
@@ -61,7 +63,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 22px;
+      margin-bottom: 20px;
     }
 
     .back-btn {
@@ -86,65 +88,129 @@
       font-size: 1.1em; cursor: pointer; backdrop-filter: blur(12px);
     }
 
+    /* Role Toggle Navigation */
+    .view-mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 6px;
+      border-radius: 18px;
+    }
+
+    .tab-btn {
+      padding: 12px;
+      border-radius: 14px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.95em;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    /* Header */
     .header { text-align: center; margin-bottom: 20px; }
     .header h2 { font-size: 1.6em; font-weight: 700; margin-bottom: 4px; }
     .header p { font-size: 0.88em; color: var(--text-muted); }
 
-    /* Overview Stats */
+    /* Admin Action & Export Bar */
+    .admin-controls {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.9em;
+      outline: none;
+    }
+    select option { background: #1e293b; color: #fff; }
+    [data-theme="light"] select option { background: #fff; color: #0f172a; }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-excel {
+      flex: 1;
+      padding: 12px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      font-family: inherit;
+      font-size: 0.95em;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+    .btn-excel:hover { transform: translateY(-1px); }
+
+    .btn-refresh {
+      padding: 12px 18px;
+      border-radius: 14px;
+      background: var(--accent);
+      color: white;
+      font-family: inherit;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* KPI Cards */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
       margin-bottom: 20px;
     }
 
     .stat-card {
-      padding: 14px 10px;
+      padding: 14px 6px;
       border-radius: 16px;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      backdrop-filter: blur(12px);
       text-align: center;
-      box-shadow: var(--shadow);
     }
-    .stat-number { font-size: 1.6em; font-weight: 700; color: var(--accent); }
-    .stat-label { font-size: 0.76em; color: var(--text-muted); }
-
-    /* Search & Filter */
-    .search-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .search-input {
-      flex: 1;
-      padding: 12px 16px;
-      border-radius: 14px;
-      background: var(--input-bg);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      font-size: 0.95em;
-      font-family: inherit;
-      outline: none;
-      box-shadow: var(--shadow);
-    }
-    .search-input:focus { border-color: var(--accent); }
-
-    .refresh-btn {
-      padding: 12px 16px;
-      border-radius: 14px;
-      background: var(--accent);
-      border: none;
-      color: white;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 15px var(--accent-glow);
-    }
+    .stat-number { font-size: 1.5em; font-weight: 700; color: var(--accent); }
+    .stat-card.stat-ot .stat-number { color: #f59e0b; }
+    .stat-card.stat-late .stat-number { color: #ef4444; }
+    .stat-label { font-size: 0.74em; color: var(--text-muted); margin-top: 2px; }
 
     /* History List */
     .history-list {
@@ -163,13 +229,13 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
+      gap: 12px;
     }
 
     .user-info {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       flex: 1;
     }
 
@@ -182,9 +248,7 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 1.3em; font-weight: 700; color: white;
     }
-    .avatar-img {
-      width: 100%; height: 100%; object-fit: cover;
-    }
+    .avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
     .user-details .name {
       font-size: 1.05em; font-weight: 600; color: var(--text-main); margin-bottom: 2px;
@@ -198,6 +262,7 @@
       background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border);
       color: var(--text-muted);
     }
+    .meta-tag.ot-tag { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
 
     .date-time {
       font-size: 0.82em; color: var(--text-muted); display: flex; gap: 8px;
@@ -212,17 +277,13 @@
     }
     .type-in  { background: rgba(16, 185, 129, 0.2); color: #34d399; }
     .type-out { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-    .type-ot  { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
 
     .status-tag {
       font-size: 0.74em; font-weight: 600; color: var(--text-muted);
     }
     .status-tag.late { color: #f87171; font-weight: 700; }
 
-    .map-link {
-      font-size: 0.76em; color: #38bdf8; text-decoration: none;
-    }
-    .map-link:hover { text-decoration: underline; }
+    .map-link { font-size: 0.76em; color: #38bdf8; text-decoration: none; }
 
     .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
   </style>
@@ -235,38 +296,72 @@
     <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">🌙</button>
   </div>
 
-  <div class="header">
-    <h2>📋 ประวัติการลงเวลาเข้า-ออกงาน</h2>
-    <p>ตรวจสอบสถิติการตอกบัตร แผนก และพิกัด GPS</p>
+  <!-- Role Tabs -->
+  <div class="view-mode-tabs">
+    <button class="tab-btn active" id="tabMy" onclick="switchView('my')">👤 ประวัติของฉัน</button>
+    <button class="tab-btn" id="tabAdmin" onclick="switchView('admin')">👑 ผู้ดูแลระบบ (Admin)</button>
   </div>
 
+  <div class="header">
+    <h2 id="viewTitle">📋 ประวัติการลงเวลาของฉัน</h2>
+    <p id="viewSubtitle">แสดงรายการตอกบัตรเข้า-ออกงาน และชั่วโมง OT ล่าสุด</p>
+  </div>
+
+  <!-- Admin Controls (Filters & Excel Export) -->
+  <div id="adminPanel" class="admin-controls" style="display:none;">
+    <div class="filter-grid">
+      <!-- 1. Filter by Employee -->
+      <select id="empFilter" onchange="applyFilters()">
+        <option value="">👥 พนักงานทุกคน (ทั้งหมด)</option>
+      </select>
+
+      <!-- 2. Filter by Month/Year -->
+      <select id="monthFilter" onchange="applyFilters()">
+        <option value="">📅 ทุกเดือน (ทั้งหมด)</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-excel" onclick="exportToExcel()">
+        📥 ส่งออกรายงาน Excel (.xlsx)
+      </button>
+      <button class="btn-refresh" onclick="loadAttendance()">
+        🔄 รีเฟรช
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary KPI Cards -->
   <div class="stats-row">
     <div class="stat-card">
-      <div class="stat-number" id="todayCheckIn">0</div>
-      <div class="stat-label">เข้างานวันนี้</div>
+      <div class="stat-number" id="kpiTotal">0</div>
+      <div class="stat-label">รายการทั้งหมด</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number" id="todayCheckOut">0</div>
-      <div class="stat-label">ออกงานวันนี้</div>
+      <div class="stat-number" id="kpiIn">0</div>
+      <div class="stat-label">เข้างาน</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-number" id="totalRecords">0</div>
-      <div class="stat-label">ประวัติทั้งหมด</div>
+    <div class="stat-card stat-ot">
+      <div class="stat-number" id="kpiOt">0</div>
+      <div class="stat-label">รวม OT (ชม.)</div>
+    </div>
+    <div class="stat-card stat-late">
+      <div class="stat-number" id="kpiLate">0</div>
+      <div class="stat-label">มาสาย (ครั้ง)</div>
     </div>
   </div>
 
-  <div class="search-bar">
-    <input type="text" id="searchInput" class="search-input" placeholder="🔍 ค้นหาชื่อ หรือ รหัสพนักงาน..." oninput="filterList()">
-    <button class="refresh-btn" onclick="loadAttendance()">🔄 โหลดใหม่</button>
-  </div>
-
+  <!-- Attendance Records List -->
   <div class="history-list" id="historyList">
-    <div class="empty-state">⏳ กำลังโหลดประวัติการเข้างาน...</div>
+    <div class="empty-state">⏳ กำลังโหลดข้อมูล...</div>
   </div>
 </div>
 
 <script>
-  let allAttendance = [];
+  let currentViewMode = 'my'; // 'my' or 'admin'
+  let allRecords = [];
+  let currentFiltered = [];
+  let adminPin = localStorage.getItem('admin_pin') || '1234';
 
   function initTheme() {
     const saved = localStorage.getItem('app_theme') || 'dark';
@@ -282,6 +377,34 @@
     document.getElementById('themeBtn').innerText = next === 'light' ? '☀️' : '🌙';
   }
 
+  function switchView(mode) {
+    if (mode === 'admin') {
+      const pin = prompt('🔒 กรุณากรอกรหัส Admin PIN (ค่าเริ่มต้น: 1234):');
+      if (pin !== adminPin && pin !== '1234') {
+        alert('❌ รหัสผ่าน Admin ไม่ถูกต้อง');
+        return;
+      }
+    }
+
+    currentViewMode = mode;
+    document.getElementById('tabMy').classList.toggle('active', mode === 'my');
+    document.getElementById('tabAdmin').classList.toggle('active', mode === 'admin');
+
+    if (mode === 'admin') {
+      document.getElementById('viewTitle').innerText = '📊 รายงานการลงเวลาและสรุปผล (Admin)';
+      document.getElementById('viewSubtitle').innerText = 'ตรวจสอบพนักงานทุกคน กรองตามเดือน และดาวน์โหลดไฟล์ Excel';
+      document.getElementById('adminPanel').style.display = 'block';
+    } else {
+      document.getElementById('viewTitle').innerText = '📋 ประวัติการลงเวลาของฉัน';
+      document.getElementById('viewSubtitle').innerText = 'แสดงรายการตอกบัตรเข้า-ออกงาน และชั่วโมง OT ล่าสุด';
+      document.getElementById('adminPanel').style.display = 'none';
+    }
+
+    applyFilters();
+  }
+
+  const API_URL = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
+
   async function loadAttendance() {
     const listEl = document.getElementById('historyList');
     listEl.innerHTML = '<div class="empty-state">⏳ กำลังดึงข้อมูลจาก Google Sheets...</div>';
@@ -293,76 +416,130 @@
     } catch(e) {}
 
     // 2. Google Apps Script
-    const apiUrl = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
     let remoteLogs = [];
-
-    if (apiUrl) {
+    if (API_URL) {
       try {
-        const res = await fetch(apiUrl + '?action=getAttendance');
-        if (res.ok) {
-          remoteLogs = await res.json();
-        }
+        const res = await fetch(API_URL + '?action=getAttendance');
+        if (res.ok) remoteLogs = await res.json();
       } catch(err) {
-        console.warn('Cannot fetch remote logs:', err);
+        console.warn('GAS fetch error:', err);
       }
     }
 
     // Merge
-    const combined = [...remoteLogs];
+    const merged = [...remoteLogs];
     localLogs.forEach(loc => {
-      const exists = combined.some(r => r.name === loc.name && r.time === loc.time && r.date === loc.date);
-      if (!exists) combined.unshift(loc);
-    });
-
-    allAttendance = combined;
-    renderList(allAttendance);
-  }
-
-  function renderList(items) {
-    const listEl = document.getElementById('historyList');
-    document.getElementById('totalRecords').innerText = items.length;
-
-    let inCount = 0;
-    let outCount = 0;
-    const today = new Date().getDate();
-
-    items.forEach(item => {
-      if (item.date && String(item.date).includes(today)) {
-        if ((item.type || '').includes('Check-In') || (item.type || '').includes('เข้างาน')) inCount++;
-        else if ((item.type || '').includes('Check-Out') || (item.type || '').includes('ออกงาน')) outCount++;
+      if (!merged.some(r => r.name === loc.name && r.time === loc.time && r.date === loc.date)) {
+        merged.unshift(loc);
       }
     });
 
-    document.getElementById('todayCheckIn').innerText = inCount;
-    document.getElementById('todayCheckOut').innerText = outCount;
+    allRecords = merged;
+    populateDropdowns(allRecords);
+    applyFilters();
+  }
+
+  function populateDropdowns(records) {
+    // Populate Employee Dropdown
+    const empSelect = document.getElementById('empFilter');
+    const uniqueEmployees = [...new Set(records.map(r => r.name).filter(Boolean))];
+    empSelect.innerHTML = '<option value="">👥 พนักงานทุกคน (ทั้งหมด)</option>' +
+      uniqueEmployees.map(name => `<option value="${name}">${name}</option>`).join('');
+
+    // Populate Month Dropdown (extract month/year from date like '5/11/2026')
+    const monthSelect = document.getElementById('monthFilter');
+    const monthsSet = new Set();
+    records.forEach(r => {
+      if (r.date) {
+        const parts = String(r.date).replace(/'/g, '').split('/');
+        if (parts.length >= 2) {
+          monthsSet.add(parts[1] + '/' + (parts[2] || ''));
+        }
+      }
+    });
+    const monthsArr = Array.from(monthsSet);
+    monthSelect.innerHTML = '<option value="">📅 ทุกเดือน (ทั้งหมด)</option>' +
+      monthsArr.map(m => `<option value="${m}">เดือน ${m}</option>`).join('');
+  }
+
+  function applyFilters() {
+    let list = [...allRecords];
+
+    if (currentViewMode === 'my') {
+      // In 'my' mode, filter by last scanned employee or first found name
+      const lastScannedId = localStorage.getItem('last_scanned_empid');
+      const localLogs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
+      const myName = localLogs.length > 0 ? localLogs[0].name : '';
+
+      if (lastScannedId || myName) {
+        list = list.filter(r => (lastScannedId && r.employeeId === lastScannedId) || (myName && r.name === myName));
+      }
+    } else {
+      // In Admin mode, use dropdown filters
+      const selectedEmp = document.getElementById('empFilter').value;
+      const selectedMonth = document.getElementById('monthFilter').value;
+
+      if (selectedEmp) {
+        list = list.filter(r => r.name === selectedEmp);
+      }
+      if (selectedMonth) {
+        list = list.filter(r => String(r.date).includes('/' + selectedMonth.split('/')[0] + '/'));
+      }
+    }
+
+    currentFiltered = list;
+    renderData(currentFiltered);
+  }
+
+  function renderData(items) {
+    const listEl = document.getElementById('historyList');
+
+    // Calculate KPIs
+    let totalIn = 0;
+    let totalOtHours = 0;
+    let totalLate = 0;
+
+    items.forEach(i => {
+      if ((i.type || '').includes('เข้างาน') || (i.type || '').includes('Check-In')) totalIn++;
+      if (i.otHours && !isNaN(parseFloat(i.otHours))) totalOtHours += parseFloat(i.otHours);
+      if ((i.status || '').includes('สาย')) totalLate++;
+    });
+
+    document.getElementById('kpiTotal').innerText = items.length;
+    document.getElementById('kpiIn').innerText    = totalIn;
+    document.getElementById('kpiOt').innerText    = totalOtHours;
+    document.getElementById('kpiLate').innerText  = totalLate;
 
     if (!items || items.length === 0) {
-      listEl.innerHTML = '<div class="empty-state">📭 ยังไม่มีประวัติการลงเวลาในระบบ</div>';
+      listEl.innerHTML = '<div class="empty-state">📭 ไม่พบข้อมูลการลงเวลาตามเงื่อนไขที่เลือก</div>';
       return;
     }
 
     listEl.innerHTML = items.map(item => {
       const typeStr = item.type || 'เข้างาน (Check-In)';
-      const typeClass = typeStr.includes('Check-Out') ? 'type-out' : typeStr.includes('OT') ? 'type-ot' : 'type-in';
+      const typeClass = typeStr.includes('Check-Out') || typeStr.includes('ออกงาน') ? 'type-out' : 'type-in';
       const isLate = (item.status || '').includes('สาย');
+
       const photoHtml = (item.photoLink && item.photoLink.startsWith('data:image'))
         ? `<img class="avatar-img" src="${item.photoLink}" alt="Photo">`
         : (item.name ? item.name.charAt(0).toUpperCase() : '?');
 
+      const otBadge = (item.otHours && parseFloat(item.otHours) > 0)
+        ? `<span class="meta-tag ot-tag">⏱️ OT: ${item.otHours} ชม.</span>` : '';
+
       const mapLink = item.mapLink && item.mapLink.startsWith('http')
-        ? `<a href="${item.mapLink}" target="_blank" class="map-link">📍 Google Maps</a>` : '';
+        ? `<a href="${item.mapLink}" target="_blank" class="map-link">📍 แผนที่ GPS</a>` : '';
 
       return `
         <div class="history-card">
           <div class="user-info">
-            <div class="avatar-wrap">
-              ${photoHtml}
-            </div>
+            <div class="avatar-wrap">${photoHtml}</div>
             <div class="user-details">
               <div class="name">${item.name || 'พนักงาน'}</div>
               <div class="meta-tags">
                 <span class="meta-tag">🆔 ${item.employeeId || 'EMP'}</span>
                 <span class="meta-tag">🏢 ${item.department || 'ทั่วไป'}</span>
+                ${otBadge}
               </div>
               <div class="date-time">
                 <span>🕒 ${item.time || '-'}</span>
@@ -380,18 +557,40 @@
     }).join('');
   }
 
-  function filterList() {
-    const q = document.getElementById('searchInput').value.trim().toLowerCase();
-    if (!q) {
-      renderList(allAttendance);
-      return;
+  // Export to Excel (.xlsx) using SheetJS
+  function exportToExcel() {
+    if (!currentFiltered || currentFiltered.length === 0) {
+      return alert('ไม่มีข้อมูลสำหรับส่งออกเป็น Excel');
     }
-    const filtered = allAttendance.filter(i =>
-      (i.name || '').toLowerCase().includes(q) ||
-      (i.employeeId || '').toLowerCase().includes(q) ||
-      (i.department || '').toLowerCase().includes(q)
-    );
-    renderList(filtered);
+
+    const excelRows = currentFiltered.map((row, idx) => ({
+      'ลำดับ (No.)': idx + 1,
+      'รหัสพนักงาน (Emp ID)': row.employeeId || '-',
+      'ชื่อ-นามสกุล (Name)': row.name || '-',
+      'แผนก (Department)': row.department || 'ทั่วไป',
+      'ประเภท (Type)': row.type || 'เข้างาน',
+      'วันที่ (Date)': String(row.date || '').replace(/'/g, ''),
+      'เวลา (Time)': row.time || '-',
+      'สถานะ (Status)': row.status || 'ปกติ',
+      'ชั่วโมง OT (OT Hours)': row.otHours || 0,
+      'ละติจูด (Lat)': row.lat || '-',
+      'ลองจิจูด (Lng)': row.lng || '-',
+      'ลิงก์แผนที่ (Map Link)': row.mapLink || '-'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(excelRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Attendance_Report");
+
+    // Auto Column Widths
+    const colWidths = [
+      { wch: 10 }, { wch: 15 }, { wch: 25 }, { wch: 18 }, { wch: 18 },
+      { wch: 14 }, { wch: 12 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 30 }
+    ];
+    ws['!cols'] = colWidths;
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `รายงานลงเวลาเข้าออกงาน_${dateStr}.xlsx`);
   }
 
   window.addEventListener('load', () => {
