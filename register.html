@@ -238,6 +238,7 @@
 </div>
 
 <script>
+  (function(){ const t = localStorage.getItem('app_theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
   const API_URL   = localStorage.getItem('gasApiUrl') || GAS_API_URL;
   const video     = document.getElementById('video');
   const statusDiv = document.getElementById('status');

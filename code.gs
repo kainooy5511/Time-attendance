@@ -144,3 +144,23 @@ function getConfig() {
 
   return config;
 }
+
+function getAttendance() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Attendance');
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return [];
+  let list = [];
+  for (let i = 1; i < data.length; i++) {
+    list.push({
+      name: data[i][0],
+      time: data[i][1],
+      date: data[i][2],
+      lat: data[i][3],
+      lng: data[i][4],
+      mapLink: data[i][5]
+    });
+  }
+  return list.reverse();
+}

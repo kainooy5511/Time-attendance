@@ -1,0 +1,24 @@
+{
+  "name": "checkin",
+  "version": "1.0.0",
+  "description": "> ระบบบันทึกเวลาเข้างานด้วยการสแกนใบหน้า + GPS Geofencing\r > Deploy บน Netlify · ข้อมูลเก็บใน Google Sheets · ไม่ต้องการ Server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ManageWithNoobItGuy/GAS-attendance-facescanner-with-gps-V2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ManageWithNoobItGuy/GAS-attendance-facescanner-with-gps-V2/issues"
+  },
+  "homepage": "https://github.com/ManageWithNoobItGuy/GAS-attendance-facescanner-with-gps-V2#readme",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}

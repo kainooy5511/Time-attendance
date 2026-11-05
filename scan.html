@@ -492,6 +492,7 @@
     const btn = document.getElementById('btnConfirm');
     btn.disabled   = true;
     btn.innerText  = 'กำลังบันทึก...';
+    try { const now = new Date(); const logs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]'); logs.unshift({ name: currentMatch, time: now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), date: now.toLocaleDateString('th-TH'), lat: currentLat, lng: currentLng, mapLink: (currentLat && currentLng) ? ('https://www.google.com/maps?q=' + currentLat + ',' + currentLng) : '' }); localStorage.setItem('localAttendanceLogs', JSON.stringify(logs.slice(0, 100))); } catch(e) {}
 
     try {
       const res = await fetch(API_URL, {
@@ -500,7 +501,7 @@
       });
       const data = await res.json();
       alert('✅ ' + (data.message || 'บันทึกเวลาสำเร็จ'));
-      window.location.href = 'index.html';
+      window.location.href = 'history.html';
     } catch (e) {
       alert('❌ บันทึกล้มเหลว: ' + e.message);
       btn.disabled  = false;
