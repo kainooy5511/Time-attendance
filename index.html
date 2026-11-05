@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Smart Attendance — ระบบลงเวลาอัจฉริยะ</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ลงเวลา">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <style>
@@ -282,6 +289,16 @@
 
   <!-- Bento Menu Grid -->
   <div class="menu-cards">
+    <!-- PWA Install Action Banner -->
+    <div id="pwaInstallCard" class="btn-menu btn-install" onclick="installPWA()" style="cursor:pointer; background:linear-gradient(135deg, rgba(99,102,241,0.18), rgba(59,130,246,0.22)); border-color:rgba(99,102,241,0.5);">
+      <div class="card-icon" style="background:linear-gradient(135deg, #6366f1, #3b82f6); box-shadow:0 6px 20px rgba(99,102,241,0.45);">📲</div>
+      <div class="card-text">
+        <div class="card-title" style="color:#a5b4fc;">ติดตั้งแอปลงบนหน้าจอมือถือ (Add to Home)</div>
+        <div class="card-desc">คลิกเพื่อดึงไอคอนลงหน้าจอมือถือ เปิดเต็มจอเหมือนแอปจริง</div>
+      </div>
+      <span class="card-arrow" style="color:#818cf8;">➕</span>
+    </div>
+
     <!-- 1. Scan Attendance (Hero Card) -->
     <a href="scan.html" class="btn-menu btn-scan">
       <div class="card-icon">📷</div>
@@ -328,7 +345,75 @@
   </div>
 </div>
 
+<!-- iOS Install Instruction Modal -->
+<div id="iosInstallModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--card-bg); border:1px solid var(--card-border); max-width:380px; width:100%; border-radius:24px; padding:28px 24px; text-align:center; box-shadow:var(--shadow);">
+    <div style="font-size:48px; margin-bottom:12px;">📲</div>
+    <h3 style="font-size:1.25em; font-weight:700; margin-bottom:8px;">วิธีดึงแอปลงหน้าจอ iPhone / iPad</h3>
+    <p style="font-size:0.86em; color:var(--text-muted); margin-bottom:20px;">ทำตาม 3 ขั้นตอนง่ายๆ เพื่อใช้งานแบบเต็มจอเหมือนแอปจริง</p>
+    
+    <div style="text-align:left; font-size:0.9em; display:flex; flex-direction:column; gap:14px; background:rgba(255,255,255,0.04); padding:16px; border-radius:16px; margin-bottom:22px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="background:#6366f1; color:white; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8em;">1</span>
+        <span>แตะปุ่ม <strong>แชร์ (Share)</strong> 📤 ที่แถบล่างของ Safari</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="background:#6366f1; color:white; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8em;">2</span>
+        <span>เลื่อนลงมาเลือก ➕ <strong>"เพิ่มไปยังหน้าจอโฮม"</strong></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="background:#6366f1; color:white; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8em;">3</span>
+        <span>แตะปุ่ม <strong>"เพิ่ม" (Add)</strong> ที่มุมขวาบน</span>
+      </div>
+    </div>
+
+    <button onclick="document.getElementById('iosInstallModal').style.display='none'" style="width:100%; padding:12px; border-radius:14px; background:linear-gradient(135deg, #6366f1, #3b82f6); color:white; font-weight:700; border:none; cursor:pointer;">เข้าใจแล้ว (ปิดหน้าต่าง)</button>
+  </div>
+</div>
+
 <script>
+  let deferredPrompt = null;
+
+  // Listen for beforeinstallprompt event (Android / Chrome)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById('pwaInstallCard');
+    if (banner) banner.style.display = 'flex';
+  });
+
+  function installPWA() {
+    if (deferredPrompt) {
+      // Android / Chrome direct native install modal
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User installed the PWA');
+          const banner = document.getElementById('pwaInstallCard');
+          if (banner) banner.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
+    } else {
+      // iOS / Safari or desktop guide
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIOS) {
+        document.getElementById('iosInstallModal').style.display = 'flex';
+      } else {
+        alert('💡 สำหรับ Android: แตะปุ่มจุดสามจุด (⋮) มุมขวาบนของ Chrome แล้วเลือก "เพิ่มลงในหน้าจอหลัก" (Add to Home screen)\n\n💡 สำหรับ iPhone: แตะปุ่มแชร์ 📤 แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"');
+      }
+    }
+  }
+
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('ServiceWorker registered:', reg.scope))
+        .catch(err => console.log('ServiceWorker error:', err));
+    });
+  }
+
   // Theme Toggle Logic
   function initTheme() {
     const saved = localStorage.getItem('app_theme') || 'dark';
