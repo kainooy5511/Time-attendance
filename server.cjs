@@ -18,7 +18,8 @@ function initDb() {
       config: {
         lat: 13.7563,
         lng: 100.5018,
-        radius: 0.1 // 100 meters, or set to 0 to disable GPS check
+        radius: 0.1,
+        workStartTime: '08:30'
       },
       users: [],
       attendance: []
@@ -32,7 +33,7 @@ function readDb() {
   try {
     return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   } catch (err) {
-    return { config: { lat: 0, lng: 0, radius: 0 }, users: [], attendance: [] };
+    return { config: { lat: 0, lng: 0, radius: 0, workStartTime: '08:30' }, users: [], attendance: [] };
   }
 }
 
@@ -40,12 +41,7 @@ function saveDb(data) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
-// ---------------------------------------------------------------------
-// Emulate Google Apps Script (GAS) API Endpoints
-// Supporting both GET (?action=...) and POST ({ action: ... })
-// ---------------------------------------------------------------------
-
-// GET Handler
+// Emulate Google Apps Script API Endpoints
 app.get('/api/gas', (req, res) => {
   const action = req.query.action;
   const db = readDb();
@@ -61,58 +57,61 @@ app.get('/api/gas', (req, res) => {
   }
 });
 
-// POST Handler
 app.post('/api/gas', (req, res) => {
   const data = req.body;
   const action = data.action;
   const db = readDb();
 
   if (action === 'registerUser') {
-    // data.name, data.faceDescriptor
+    const employeeId = data.employeeId || 'EMP' + Date.now();
     const name = data.name;
+    const department = data.department || 'ทั่วไป';
     const faceDescriptor = data.faceDescriptor;
 
     if (!db.users) db.users = [];
     db.users.push({
+      employeeId,
+      name,
       label: name,
+      department,
       descriptor: faceDescriptor,
       registeredAt: new Date().toISOString()
     });
     saveDb(db);
-    return res.json({ success: true, message: 'บันทึกข้อมูลใบหน้าเรียบร้อย (Local Mode)' });
+    return res.json({ success: true, message: 'ลงทะเบียนพนักงานและบันทึกใบหน้าเรียบร้อย' });
   } else if (action === 'logAttendance') {
-    // data.name, data.lat, data.lng
-    const name = data.name;
-    const lat = data.lat;
-    const lng = data.lng;
-
     const now = new Date();
     const dateStr = now.toLocaleDateString('th-TH');
     const timeStr = now.toLocaleTimeString('th-TH');
-    const mapLink = (lat && lng) ? `https://www.google.com/maps?q=${lat},${lng}` : '';
+    const mapLink = (data.lat && data.lng) ? `https://www.google.com/maps?q=${data.lat},${data.lng}` : '';
 
     if (!db.attendance) db.attendance = [];
     const record = {
-      name,
+      employeeId: data.employeeId || 'EMP',
+      name: data.name,
+      department: data.department || 'ทั่วไป',
+      type: data.type || 'เข้างาน (Check-In)',
+      status: data.status || 'ปกติ',
       time: timeStr,
       date: dateStr,
-      lat: lat || '-',
-      lng: lng || '-',
+      lat: data.lat || '-',
+      lng: data.lng || '-',
       mapLink,
+      photoLink: data.photoBase64 || '-',
       timestamp: now.toISOString()
     };
     db.attendance.unshift(record);
     saveDb(db);
-    return res.json({ success: true, message: 'บันทึกเวลาสำเร็จ (Local Mode)', record });
+    return res.json({ success: true, message: 'บันทึกเวลาสำเร็จ', record });
   } else if (action === 'saveConfig') {
-    // data.lat, data.lng, data.radius
     db.config = {
       lat: parseFloat(data.lat) || 0,
       lng: parseFloat(data.lng) || 0,
-      radius: parseFloat(data.radius) || 0
+      radius: parseFloat(data.radius) || 0,
+      workStartTime: data.workStartTime || '08:30'
     };
     saveDb(db);
-    return res.json({ success: true, message: 'บันทึกการตั้งค่าเรียบร้อย (Local Mode)' });
+    return res.json({ success: true, message: 'บันทึกการตั้งค่าเรียบร้อย' });
   } else {
     return res.json({ error: 'Unknown action: ' + action });
   }

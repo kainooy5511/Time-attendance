@@ -78,36 +78,19 @@
     .back-btn:hover { color: var(--text-main); background: var(--card-hover); }
 
     .theme-toggle-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.1em;
-      cursor: pointer;
-      backdrop-filter: blur(12px);
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      color: var(--text-main); display: flex; align-items: center; justify-content: center;
+      font-size: 1.1em; cursor: pointer; backdrop-filter: blur(12px);
     }
 
-    /* Header */
     .page-header {
       margin-bottom: 24px;
       text-align: center;
     }
-    h2 {
-      font-size: 1.6em;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .header-sub {
-      font-size: 0.88em;
-      color: var(--text-muted);
-    }
+    h2 { font-size: 1.6em; font-weight: 700; margin-bottom: 4px; }
+    .header-sub { font-size: 0.88em; color: var(--text-muted); }
 
-    /* Sections */
     .section-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -126,15 +109,9 @@
       padding-bottom: 12px;
       border-bottom: 1px solid var(--card-border);
     }
-    .section-icon {
-      font-size: 20px;
-    }
-    .section-title-text {
-      font-weight: 600;
-      font-size: 1em;
-    }
+    .section-icon { font-size: 20px; }
+    .section-title-text { font-weight: 600; font-size: 1em; }
 
-    /* Form Fields */
     label {
       display: block;
       font-size: 0.84em;
@@ -166,7 +143,6 @@
       line-height: 1.5;
     }
 
-    /* Buttons */
     .btn {
       border: none;
       border-radius: 14px;
@@ -239,7 +215,7 @@
 
   <div class="page-header">
     <h2>⚙️ ตั้งค่าระบบ</h2>
-    <p class="header-sub">ปรับแต่งข้อมูลองค์กร พิกัด GPS และ API Backend</p>
+    <p class="header-sub">ปรับแต่งข้อมูลองค์กร พิกัด GPS กะเวลา และ API Backend</p>
   </div>
 
   <!-- 1. Company Branding Section -->
@@ -254,7 +230,18 @@
     <input type="text" id="companySloganInput" placeholder="เช่น ระบบลงเวลาเข้างานอัจฉริยะ Face Scan &amp; GPS">
   </div>
 
-  <!-- 2. API Backend Section -->
+  <!-- 2. Work Schedule Section -->
+  <div class="section-card">
+    <div class="section-title">
+      <span class="section-icon">⏰</span>
+      <span class="section-title-text">กะเวลาเข้างาน (คำนวณสถานะมาสาย)</span>
+    </div>
+    <label>เวลาเริ่มงานตอนเช้า (HH:mm)</label>
+    <input type="time" id="workStartTime" value="08:30">
+    <p class="note">หากสแกนเข้างานหลังเวลานี้ ระบบจะระบุสถานะ "สาย (กี่นาที)" ให้อัตโนมัติ</p>
+  </div>
+
+  <!-- 3. API Backend Section -->
   <div class="section-card">
     <div class="section-title">
       <span class="section-icon">🔗</span>
@@ -265,7 +252,7 @@
     <p class="note">URL ที่ได้จากการ Deploy Web App บน Google Sheets</p>
   </div>
 
-  <!-- 3. GPS Section -->
+  <!-- 4. GPS Section -->
   <div class="section-card">
     <div class="section-title">
       <span class="section-icon">📍</span>
@@ -292,7 +279,6 @@
 <script>
   const msgDiv = document.getElementById('msg');
 
-  // Theme Management
   function initTheme() {
     const saved = localStorage.getItem('app_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
@@ -310,11 +296,10 @@
   window.onload = function() {
     initTheme();
 
-    // Load Branding
     document.getElementById('companyNameInput').value = localStorage.getItem('company_name') || 'ระบบลงเวลาเข้างาน';
     document.getElementById('companySloganInput').value = localStorage.getItem('company_slogan') || 'Face Recognition & GPS Attendance System';
+    document.getElementById('workStartTime').value = localStorage.getItem('work_start_time') || '08:30';
 
-    // Load API URL
     const savedUrl = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
     document.getElementById('apiUrl').value = savedUrl;
 
@@ -330,6 +315,10 @@
         if (config.lat !== undefined) document.getElementById('lat').value = config.lat;
         if (config.lng !== undefined) document.getElementById('lng').value = config.lng;
         if (config.radius !== undefined) document.getElementById('radius').value = config.radius;
+        if (config.workStartTime) {
+          document.getElementById('workStartTime').value = config.workStartTime;
+          localStorage.setItem('work_start_time', config.workStartTime);
+        }
       })
       .catch(() => {});
   }
@@ -353,9 +342,11 @@
     const radius = document.getElementById('radius').value;
     const compName = document.getElementById('companyNameInput').value.trim();
     const compSlogan = document.getElementById('companySloganInput').value.trim();
+    const workStartTime = document.getElementById('workStartTime').value || '08:30';
 
     if (compName) localStorage.setItem('company_name', compName);
     if (compSlogan) localStorage.setItem('company_slogan', compSlogan);
+    localStorage.setItem('work_start_time', workStartTime);
 
     if (!apiUrl) return showMsg('❌ กรุณากรอก API URL', 'error');
 
@@ -365,7 +356,7 @@
     try {
       const res = await fetch(apiUrl, {
         method: 'POST',
-        body: JSON.stringify({ action: 'saveConfig', lat, lng, radius })
+        body: JSON.stringify({ action: 'saveConfig', lat, lng, radius, workStartTime })
       });
       const data = await res.json();
       showMsg('✅ ' + (data.message || 'บันทึกสำเร็จเรียบร้อย'), 'success');

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ประวัติการลงเวลาเข้างาน</title>
+  <title>ประวัติการลงเวลา — Smart Attendance</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <style>
@@ -17,9 +17,8 @@
       --accent: #6366f1;
       --accent-glow: rgba(99, 102, 241, 0.35);
       --success: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.3);
       --input-bg: rgba(255, 255, 255, 0.06);
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     }
 
     [data-theme="light"] {
@@ -27,17 +26,16 @@
       --text-main: #0f172a;
       --text-muted: #64748b;
       --card-bg: rgba(255, 255, 255, 0.85);
-      --card-border: rgba(226, 232, 240, 0.8);
+      --card-border: rgba(226, 232, 240, 0.85);
       --card-hover: rgba(255, 255, 255, 1);
       --accent: #4f46e5;
       --accent-glow: rgba(79, 70, 229, 0.2);
       --success: #059669;
-      --success-glow: rgba(5, 150, 105, 0.2);
       --input-bg: #ffffff;
       --shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background 0.3s, color 0.3s, border-color 0.3s; }
 
     body {
       font-family: 'Sarabun', sans-serif;
@@ -53,7 +51,7 @@
 
     .container {
       width: 100%;
-      max-width: 580px;
+      max-width: 600px;
       position: relative;
       z-index: 1;
     }
@@ -63,7 +61,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
     }
 
     .back-btn {
@@ -82,38 +80,37 @@
     .back-btn:hover { color: var(--text-main); background: var(--card-hover); }
 
     .theme-toggle-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      color: var(--text-main); display: flex; align-items: center; justify-content: center;
+      font-size: 1.1em; cursor: pointer; backdrop-filter: blur(12px);
+    }
+
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h2 { font-size: 1.6em; font-weight: 700; margin-bottom: 4px; }
+    .header p { font-size: 0.88em; color: var(--text-muted); }
+
+    /* Overview Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      padding: 14px 10px;
+      border-radius: 16px;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.1em;
-      cursor: pointer;
       backdrop-filter: blur(12px);
-    }
-
-    /* Header */
-    .header {
-      margin-bottom: 20px;
       text-align: center;
+      box-shadow: var(--shadow);
     }
+    .stat-number { font-size: 1.6em; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 0.76em; color: var(--text-muted); }
 
-    .header h2 {
-      font-size: 1.6em;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .header p {
-      font-size: 0.88em;
-      color: var(--text-muted);
-    }
-
-    /* Filter & Search Bar */
+    /* Search & Filter */
     .search-bar {
       display: flex;
       gap: 10px;
@@ -135,7 +132,7 @@
     .search-input:focus { border-color: var(--accent); }
 
     .refresh-btn {
-      padding: 12px 18px;
+      padding: 12px 16px;
       border-radius: 14px;
       background: var(--accent);
       border: none;
@@ -149,34 +146,7 @@
       box-shadow: 0 4px 15px var(--accent-glow);
     }
 
-    /* Stats Overview */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .stat-card {
-      padding: 16px;
-      border-radius: 16px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(12px);
-      text-align: center;
-      box-shadow: var(--shadow);
-    }
-    .stat-number {
-      font-size: 1.8em;
-      font-weight: 700;
-      color: var(--accent);
-    }
-    .stat-label {
-      font-size: 0.8em;
-      color: var(--text-muted);
-    }
-
-    /* Attendance List */
+    /* History List */
     .history-list {
       display: flex;
       flex-direction: column;
@@ -184,7 +154,7 @@
     }
 
     .history-card {
-      padding: 18px;
+      padding: 16px;
       border-radius: 18px;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -194,100 +164,67 @@
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .history-card:hover {
-      transform: translateY(-2px);
-      background: var(--card-hover);
     }
 
     .user-info {
       display: flex;
       align-items: center;
       gap: 14px;
+      flex: 1;
     }
 
-    .avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #6366f1, #3b82f6);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2em;
-      font-weight: 700;
+    .avatar-wrap {
+      width: 52px; height: 52px;
+      border-radius: 16px;
+      overflow: hidden;
       flex-shrink: 0;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3em; font-weight: 700; color: white;
+    }
+    .avatar-img {
+      width: 100%; height: 100%; object-fit: cover;
     }
 
     .user-details .name {
-      font-size: 1.05em;
-      font-weight: 600;
-      color: var(--text-main);
-      margin-bottom: 4px;
+      font-size: 1.05em; font-weight: 600; color: var(--text-main); margin-bottom: 2px;
     }
 
-    .user-details .date-time {
-      font-size: 0.82em;
+    .meta-tags {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;
+    }
+    .meta-tag {
+      font-size: 0.74em; font-weight: 600; padding: 2px 8px; border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border);
       color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
 
-    .status-badge {
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.78em;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      white-space: nowrap;
-    }
-    [data-theme="light"] .status-badge {
-      background: #ecfdf5;
-      color: #059669;
-      border-color: #a7f3d0;
+    .date-time {
+      font-size: 0.82em; color: var(--text-muted); display: flex; gap: 8px;
     }
 
-    .map-btn {
-      color: #38bdf8;
-      text-decoration: none;
-      font-size: 0.82em;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 4px;
-    }
-    .map-btn:hover { text-decoration: underline; }
-
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-muted);
-      font-size: 0.95em;
+    .card-right {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
     }
 
-    /* Ambient lighting */
-    body::before {
-      content: '';
-      position: fixed;
-      width: 400px;
-      height: 400px;
-      background: var(--accent);
-      border-radius: 50%;
-      filter: blur(120px);
-      opacity: 0.1;
-      top: -100px;
-      left: -100px;
-      pointer-events: none;
-      z-index: 0;
+    .type-badge {
+      font-size: 0.8em; font-weight: 700; padding: 4px 10px; border-radius: 14px;
     }
+    .type-in  { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .type-out { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .type-ot  { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+
+    .status-tag {
+      font-size: 0.74em; font-weight: 600; color: var(--text-muted);
+    }
+    .status-tag.late { color: #f87171; font-weight: 700; }
+
+    .map-link {
+      font-size: 0.76em; color: #38bdf8; text-decoration: none;
+    }
+    .map-link:hover { text-decoration: underline; }
+
+    .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
   </style>
 </head>
 <body>
@@ -299,23 +236,27 @@
   </div>
 
   <div class="header">
-    <h2>📋 ประวัติการลงเวลาเข้างาน</h2>
-    <p>ตรวจสอบเวลาเข้างานและพิกัด GPS ล่าสุด</p>
+    <h2>📋 ประวัติการลงเวลาเข้า-ออกงาน</h2>
+    <p>ตรวจสอบสถิติการตอกบัตร แผนก และพิกัด GPS</p>
   </div>
 
   <div class="stats-row">
     <div class="stat-card">
-      <div class="stat-number" id="todayCount">0</div>
-      <div class="stat-label">ลงเวลาวันนี้ (คน)</div>
+      <div class="stat-number" id="todayCheckIn">0</div>
+      <div class="stat-label">เข้างานวันนี้</div>
     </div>
     <div class="stat-card">
-      <div class="stat-number" id="totalCount">0</div>
-      <div class="stat-label">ประวัติทั้งหมด (ครั้ง)</div>
+      <div class="stat-number" id="todayCheckOut">0</div>
+      <div class="stat-label">ออกงานวันนี้</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="totalRecords">0</div>
+      <div class="stat-label">ประวัติทั้งหมด</div>
     </div>
   </div>
 
   <div class="search-bar">
-    <input type="text" id="searchInput" class="search-input" placeholder="🔍 ค้นหาชื่อพนักงาน..." oninput="filterList()">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 ค้นหาชื่อ หรือ รหัสพนักงาน..." oninput="filterList()">
     <button class="refresh-btn" onclick="loadAttendance()">🔄 โหลดใหม่</button>
   </div>
 
@@ -327,7 +268,6 @@
 <script>
   let allAttendance = [];
 
-  // Theme Management
   function initTheme() {
     const saved = localStorage.getItem('app_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
@@ -342,10 +282,9 @@
     document.getElementById('themeBtn').innerText = next === 'light' ? '☀️' : '🌙';
   }
 
-  // Load Data
   async function loadAttendance() {
     const listEl = document.getElementById('historyList');
-    listEl.innerHTML = '<div class="empty-state">⏳ กำลังดึงข้อมูลจากระบบ...</div>';
+    listEl.innerHTML = '<div class="empty-state">⏳ กำลังดึงข้อมูลจาก Google Sheets...</div>';
 
     // 1. Local Cache
     let localLogs = [];
@@ -368,7 +307,7 @@
       }
     }
 
-    // Combine & Deduplicate
+    // Merge
     const combined = [...remoteLogs];
     localLogs.forEach(loc => {
       const exists = combined.some(r => r.name === loc.name && r.time === loc.time && r.date === loc.date);
@@ -381,37 +320,60 @@
 
   function renderList(items) {
     const listEl = document.getElementById('historyList');
-    document.getElementById('totalCount').innerText = items.length;
+    document.getElementById('totalRecords').innerText = items.length;
 
-    const todayStr = new Date().toLocaleDateString('th-TH');
-    const todayItems = items.filter(item => {
-      return item.date && item.date.includes(new Date().getDate());
+    let inCount = 0;
+    let outCount = 0;
+    const today = new Date().getDate();
+
+    items.forEach(item => {
+      if (item.date && String(item.date).includes(today)) {
+        if ((item.type || '').includes('Check-In') || (item.type || '').includes('เข้างาน')) inCount++;
+        else if ((item.type || '').includes('Check-Out') || (item.type || '').includes('ออกงาน')) outCount++;
+      }
     });
-    document.getElementById('todayCount').innerText = todayItems.length;
+
+    document.getElementById('todayCheckIn').innerText = inCount;
+    document.getElementById('todayCheckOut').innerText = outCount;
 
     if (!items || items.length === 0) {
-      listEl.innerHTML = '<div class="empty-state">📭 ยังไม่มีประวัติการลงเวลาเข้างาน</div>';
+      listEl.innerHTML = '<div class="empty-state">📭 ยังไม่มีประวัติการลงเวลาในระบบ</div>';
       return;
     }
 
     listEl.innerHTML = items.map(item => {
-      const initial = item.name ? item.name.charAt(0).toUpperCase() : '?';
-      const mapBtn = item.mapLink ? `<a href="${item.mapLink}" target="_blank" class="map-btn">📍 ดูแผนที่ Google Maps</a>` : '';
+      const typeStr = item.type || 'เข้างาน (Check-In)';
+      const typeClass = typeStr.includes('Check-Out') ? 'type-out' : typeStr.includes('OT') ? 'type-ot' : 'type-in';
+      const isLate = (item.status || '').includes('สาย');
+      const photoHtml = (item.photoLink && item.photoLink.startsWith('data:image'))
+        ? `<img class="avatar-img" src="${item.photoLink}" alt="Photo">`
+        : (item.name ? item.name.charAt(0).toUpperCase() : '?');
+
+      const mapLink = item.mapLink && item.mapLink.startsWith('http')
+        ? `<a href="${item.mapLink}" target="_blank" class="map-link">📍 Google Maps</a>` : '';
+
       return `
         <div class="history-card">
           <div class="user-info">
-            <div class="avatar">${initial}</div>
+            <div class="avatar-wrap">
+              ${photoHtml}
+            </div>
             <div class="user-details">
               <div class="name">${item.name || 'พนักงาน'}</div>
+              <div class="meta-tags">
+                <span class="meta-tag">🆔 ${item.employeeId || 'EMP'}</span>
+                <span class="meta-tag">🏢 ${item.department || 'ทั่วไป'}</span>
+              </div>
               <div class="date-time">
                 <span>🕒 ${item.time || '-'}</span>
                 <span>📅 ${item.date || '-'}</span>
+                ${mapLink}
               </div>
-              ${mapBtn}
             </div>
           </div>
-          <div class="status-badge">
-            ✅ เข้างานแล้ว
+          <div class="card-right">
+            <span class="type-badge ${typeClass}">${typeStr}</span>
+            <span class="status-tag ${isLate ? 'late' : ''}">สถานะ: ${item.status || 'ปกติ'}</span>
           </div>
         </div>
       `;
@@ -424,7 +386,11 @@
       renderList(allAttendance);
       return;
     }
-    const filtered = allAttendance.filter(i => (i.name || '').toLowerCase().includes(q));
+    const filtered = allAttendance.filter(i =>
+      (i.name || '').toLowerCase().includes(q) ||
+      (i.employeeId || '').toLowerCase().includes(q) ||
+      (i.department || '').toLowerCase().includes(q)
+    );
     renderList(filtered);
   }
 

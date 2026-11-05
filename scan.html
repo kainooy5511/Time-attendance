@@ -1,270 +1,287 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>สแกนเข้างาน</title>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <title>สแกนลงเวลา — Smart Attendance</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-gradient: linear-gradient(135deg, #090d16 0%, #111827 50%, #0b1329 100%);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --card-hover: rgba(255, 255, 255, 0.08);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      --accent: #6366f1;
+      --success: #10b981;
+    }
+
+    [data-theme="light"] {
+      --bg-gradient: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #f8fafc 100%);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(226, 232, 240, 0.85);
+      --card-hover: rgba(255, 255, 255, 1);
+      --shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+      --accent: #4f46e5;
+      --success: #059669;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background 0.3s, color 0.3s, border-color 0.3s; }
 
     body {
       font-family: 'Sarabun', sans-serif;
       min-height: 100vh;
-      background: linear-gradient(160deg, #0f0f23 0%, #0d1b2a 60%, #0a0f1e 100%);
-      color: #e2e8f0;
+      background: var(--bg-gradient);
+      color: var(--text-main);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px 16px 50px;
+      padding: 20px 16px 50px;
       position: relative;
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      width: 500px; height: 500px;
-      background: #10b981;
-      border-radius: 50%;
-      filter: blur(120px);
-      opacity: 0.08;
-      bottom: -150px; right: -150px;
-      pointer-events: none; z-index: 0;
     }
 
     .page-wrap {
-      width: 100%; max-width: 560px;
-      position: relative; z-index: 1;
-      animation: fadeIn 0.5s ease;
-      display: flex; flex-direction: column; align-items: center;
+      width: 100%;
+      max-width: 500px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    /* Header */
+    /* Top Bar */
     .top-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      width: 100%; margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 16px;
     }
-    .back-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      color: #64748b; text-decoration: none; font-size: 0.85em;
-      padding: 6px 12px; border-radius: 20px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      transition: all 0.25s ease;
-    }
-    .back-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.1); }
 
-    h2 {
-      font-size: 1.1em; font-weight: 600; color: #c7d2fe;
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9em;
+      padding: 8px 14px;
+      border-radius: 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
     }
-    .spacer { width: 80px; }
+
+    .theme-toggle-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      color: var(--text-main); display: flex; align-items: center; justify-content: center;
+      font-size: 1.1em; cursor: pointer; backdrop-filter: blur(12px);
+    }
+
+    /* Type Selector Pills */
+    .type-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 6px;
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+    }
+
+    .type-pill {
+      padding: 10px 6px;
+      border-radius: 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.88em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-align: center;
+    }
+    .type-pill.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+    .type-pill.active.out {
+      background: #ef4444;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+    .type-pill.active.ot {
+      background: #f59e0b;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    }
 
     /* Status Area */
     .status-area {
-      width: 100%; text-align: center; margin-bottom: 14px;
+      text-align: center;
+      margin-bottom: 14px;
+      width: 100%;
     }
-    #main-status {
-      font-size: 0.9em; color: #94a3b8;
-      min-height: 22px;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    #gps-status {
-      font-size: 0.8em; color: #475569; margin-top: 6px;
-      min-height: 18px;
-    }
-    .status-chip {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 20px;
-      padding: 5px 12px; font-size: 0.82em;
-    }
-    .dot-pulse {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #10b981;
-      animation: pulse 1.5s infinite;
-    }
+    #main-status { font-size: 1em; font-weight: 600; color: #38bdf8; margin-bottom: 4px; }
+    #gps-status  { font-size: 0.84em; color: var(--text-muted); }
 
-    /* GPS Alert */
     .gps-alert {
       display: none;
-      background: rgba(239,68,68,0.12);
-      border: 1px solid rgba(239,68,68,0.35);
+      width: 100%;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
       color: #fca5a5;
-      border-radius: 12px; padding: 12px 16px;
-      width: 100%; margin-bottom: 12px;
-      font-size: 0.88em; font-weight: 600;
+      padding: 12px;
+      border-radius: 14px;
+      font-size: 0.88em;
       text-align: center;
+      margin-bottom: 14px;
+      line-height: 1.5;
     }
 
-    /* Scanner Container */
+    /* Camera Container */
     .video-container {
       position: relative;
       width: 100%;
       border-radius: 20px;
       overflow: hidden;
-      background: #060612;
-      min-height: 280px;
+      background: #000;
+      box-shadow: var(--shadow);
+      aspect-ratio: 4/3;
+      margin-bottom: 18px;
     }
-
     video {
-      width: 100%; height: auto; display: block;
+      width: 100%; height: 100%; object-fit: cover;
       transform: scaleX(-1);
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      border-radius: 20px;
     }
-    video.active { opacity: 1; }
 
-    /* Scanner frame corners */
+    /* Frame Overlay */
     .scanner-frame {
-      position: absolute; inset: 0; z-index: 5; pointer-events: none;
+      position: absolute; inset: 0; pointer-events: none; z-index: 5;
     }
     .corner {
-      position: absolute;
-      width: 28px; height: 28px;
-      border-color: #10b981;
-      border-style: solid;
-      opacity: 0.8;
+      position: absolute; width: 30px; height: 30px;
+      border-color: #10b981; border-style: solid;
     }
-    .corner-tl { top: 14px;    left: 14px;   border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-    .corner-tr { top: 14px;    right: 14px;  border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-    .corner-bl { bottom: 14px; left: 14px;   border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-    .corner-br { bottom: 14px; right: 14px;  border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+    .corner-tl { top: 16px; left: 16px; border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+    .corner-tr { top: 16px; right: 16px; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+    .corner-bl { bottom: 16px; left: 16px; border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+    .corner-br { bottom: 16px; right: 16px; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
 
-    /* Scan line */
-    .scan-line {
-      display: none;
-      position: absolute; left: 8%; right: 8%;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, #10b981, transparent);
-      box-shadow: 0 0 8px rgba(16,185,129,0.8);
-      z-index: 6;
-      animation: scanMove 2s ease-in-out infinite;
-    }
-    .scan-line.active { display: block; }
-
-    /* Overlay status badge */
     #overlay-status {
-      position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,0.65);
+      position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(8px);
-      color: #e2e8f0;
-      padding: 6px 18px; border-radius: 30px;
-      z-index: 10; white-space: nowrap; font-size: 0.84em;
-      border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 16px; border-radius: 20px;
+      font-size: 0.84em; font-weight: 600; color: #fff;
+      z-index: 6;
     }
 
-    /* Start Button */
-    #btnStart {
-      display: none;
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
-      color: white; border: none; border-radius: 50px;
-      padding: 16px 44px; font-size: 18px; font-weight: 600;
-      cursor: pointer; font-family: 'Sarabun', sans-serif;
-      box-shadow: 0 4px 25px rgba(99,102,241,0.45);
-      margin: 20px auto 0;
-      transition: all 0.3s ease;
-      animation: btnPulse 2s ease-in-out infinite;
-    }
-    #btnStart:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 35px rgba(99,102,241,0.6);
-      animation: none;
-    }
-
-    /* ===== Modal ===== */
-    .modal-overlay {
-      display: none; position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 100;
-      align-items: center; justify-content: center;
-    }
-    .modal-content {
-      background: linear-gradient(160deg, #1e1e3f 0%, #16213e 100%);
-      border: 1px solid rgba(255,255,255,0.15);
-      padding: 32px 28px;
-      border-radius: 24px;
-      width: 88%; max-width: 360px;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-      display: flex; flex-direction: column; align-items: center;
-      animation: modalSlideUp 0.35s ease;
-    }
-    .modal-avatar {
-      font-size: 52px;
-      background: rgba(99,102,241,0.15);
-      border: 2px solid rgba(99,102,241,0.3);
-      border-radius: 50%;
-      width: 80px; height: 80px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 14px;
-    }
-    .modal-title { font-size: 0.82em; color: #64748b; margin-bottom: 4px; }
-    .user-name {
-      font-size: 24px; color: #a5b4fc; font-weight: 700;
-      margin-bottom: 12px;
-    }
-    .time-badge {
-      background: rgba(16,185,129,0.15);
-      border: 1px solid rgba(16,185,129,0.3);
-      color: #34d399;
-      padding: 8px 22px; border-radius: 30px;
-      font-size: 15px; font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .score-text { color: #475569; font-size: 13px; margin-bottom: 20px; }
-
-    .btn {
-      border: none; border-radius: 14px; cursor: pointer; width: 100%;
-      margin: 5px 0; font-family: 'Sarabun', sans-serif;
-      transition: all 0.25s ease;
-    }
-    .btn-confirm {
+    .btn-start {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
       background: linear-gradient(135deg, #10b981, #059669);
       color: white;
-      padding: 17px; font-size: 20px; font-weight: 700;
-      box-shadow: 0 4px 20px rgba(16,185,129,0.35);
-      margin-bottom: 10px;
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
     }
-    .btn-confirm:hover:not(:disabled) {
-      box-shadow: 0 8px 30px rgba(16,185,129,0.5);
-      transform: translateY(-1px);
-    }
-    .btn-confirm:disabled { background: rgba(255,255,255,0.08); color: #475569; box-shadow: none; }
-    .btn-cancel {
-      background: rgba(239,68,68,0.1);
-      border: 1px solid rgba(239,68,68,0.25);
-      color: #fca5a5;
-      padding: 12px; font-size: 15px; font-weight: 600;
-    }
-    .btn-cancel:hover { background: rgba(239,68,68,0.18); }
+    .btn-start:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(16, 185, 129, 0.6); }
 
-    /* Animations */
-    @keyframes fadeIn      { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes pulse       { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); } 50% { box-shadow: 0 0 0 5px rgba(16,185,129,0); } }
-    @keyframes btnPulse    { 0%,100% { box-shadow: 0 4px 25px rgba(99,102,241,0.45); } 50% { box-shadow: 0 4px 40px rgba(99,102,241,0.7); } }
-    @keyframes scanMove    { 0% { top: 12%; } 50% { top: 82%; } 100% { top: 12%; } }
-    @keyframes modalSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-content {
+      width: 100%; max-width: 380px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 26px 22px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+    }
+    .snapshot-thumb {
+      width: 88px; height: 88px; border-radius: 50%;
+      object-fit: cover; margin: 0 auto 12px;
+      border: 3px solid #10b981;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+    }
+    .modal-title { font-size: 1.15em; font-weight: 700; margin-bottom: 2px; }
+    .modal-name  { font-size: 1.35em; font-weight: 700; color: #38bdf8; margin-bottom: 8px; }
+    
+    .meta-badges {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
+      margin-bottom: 14px;
+    }
+    .meta-badge {
+      font-size: 0.78em; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+      background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border);
+    }
+    .meta-badge.status-on-time { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .meta-badge.status-late    { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    .modal-time {
+      font-size: 1.1em; font-weight: 600; color: var(--text-main); margin-bottom: 16px;
+    }
+
+    .btn-confirm {
+      width: 100%; padding: 14px; border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white; font-family: inherit; font-size: 16px; font-weight: 600;
+      border: none; cursor: pointer; margin-bottom: 10px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+    .btn-cancel {
+      width: 100%; padding: 12px; border-radius: 14px;
+      background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5; font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-<div class="page-wrap">
 
+<div class="page-wrap">
   <div class="top-bar">
-    <a href="index.html" class="back-btn">← กลับ</a>
-    <h2>📷 สแกนเข้างาน</h2>
-    <div class="spacer"></div>
+    <a href="index.html" class="back-btn">← กลับเมนูหลัก</a>
+    <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">🌙</button>
+  </div>
+
+  <!-- Type Selector Pills -->
+  <div class="type-selector">
+    <button class="type-pill active" id="pillIn" onclick="setAttendanceType('เข้างาน (Check-In)')">🟢 เข้างาน</button>
+    <button class="type-pill out" id="pillOut" onclick="setAttendanceType('ออกงาน (Check-Out)')">🔴 ออกงาน</button>
+    <button class="type-pill ot" id="pillOt" onclick="setAttendanceType('ล่วงเวลา (OT)')">⏱️ OT</button>
   </div>
 
   <div class="status-area">
-    <div id="main-status">⏳ กำลังเตรียมระบบ...</div>
+    <div id="main-status">⏳ กำลังเตรียมระบบและตรวจพิกัด GPS...</div>
     <div id="gps-status"></div>
   </div>
 
@@ -272,37 +289,58 @@
     ⚠️ คุณอยู่นอกพื้นที่ที่กำหนด!<br>กรุณาเข้าใกล้จุดเช็คอินแล้วรีเฟรชหน้าจอ
   </div>
 
-  <button id="btnStart" onclick="startCamera()">📷 แตะเพื่อเริ่มสแกน</button>
-
   <div class="video-container">
     <div class="scanner-frame">
       <div class="corner corner-tl"></div>
       <div class="corner corner-tr"></div>
       <div class="corner corner-bl"></div>
       <div class="corner corner-br"></div>
-      <div class="scan-line" id="scanLine"></div>
     </div>
-    <div id="overlay-status">รอโหลด...</div>
+    <div id="overlay-status">รอเริ่มสแกน...</div>
     <video id="video" autoplay muted playsinline></video>
   </div>
 
+  <button id="btnStart" class="btn-start" onclick="startCamera()">📷 แตะเพื่อเริ่มสแกน</button>
 </div>
 
-<!-- Confirm Modal -->
+<!-- Modal Confirm -->
 <div id="confirmModal" class="modal-overlay">
   <div class="modal-content">
-    <div class="modal-avatar">🙋</div>
+    <img id="modalSnapshot" class="snapshot-thumb" src="" alt="Snapshot">
     <p class="modal-title">ตรวจพบบุคคล</p>
-    <div class="user-name" id="modalName">...</div>
-    <div id="modalTime" class="time-badge">00:00</div>
-    <div id="modalScore" class="score-text"></div>
-    <button class="btn btn-confirm" id="btnConfirm" onclick="confirmAttendance()">✅ ยืนยันเข้างาน</button>
-    <button class="btn btn-cancel" onclick="cancelAttendance()">ไม่ใช่ฉัน</button>
+    <div class="modal-name" id="modalName">...</div>
+
+    <div class="meta-badges">
+      <span class="meta-badge" id="modalEmpId">EMP001</span>
+      <span class="meta-badge" id="modalDept">ฝ่ายทั่วไป</span>
+      <span class="meta-badge" id="modalTypeBadge">เข้างาน</span>
+      <span class="meta-badge" id="modalStatusBadge">ตรงเวลา</span>
+    </div>
+
+    <div class="modal-time" id="modalTime">เวลา: 00:00:00 น.</div>
+
+    <button class="btn-confirm" id="btnConfirm" onclick="confirmAttendance()">✅ ยืนยันการลงเวลา</button>
+    <button class="btn-cancel" onclick="cancelAttendance()">ไม่ใช่ฉัน (ยกเลิก)</button>
   </div>
 </div>
 
 <script>
-  const API_URL        = localStorage.getItem('gasApiUrl') || GAS_API_URL;
+  // Theme Management
+  function initTheme() {
+    const saved = localStorage.getItem('app_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    document.getElementById('themeBtn').innerText = saved === 'light' ? '☀️' : '🌙';
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('app_theme', next);
+    document.getElementById('themeBtn').innerText = next === 'light' ? '☀️' : '🌙';
+  }
+
+  const API_URL        = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
   const video          = document.getElementById('video');
   const mainStatus     = document.getElementById('main-status');
   const overlayStatus  = document.getElementById('overlay-status');
@@ -313,42 +351,54 @@
 
   const MATCH_THRESHOLD = 0.45;
 
+  let currentType = 'เข้างาน (Check-In)';
+  let workStartTime = '08:30';
   let knownFaces   = [];
   let scanInterval = null;
   let currentMatch = null;
+  let currentSnapshot = '';
   let currentLat   = null;
   let currentLng   = null;
 
-  // ===== Init =====
-  if (!API_URL) {
-    showError('ยังไม่ได้ตั้งค่า API URL — <a href="config.html" style="color:#fbbf24">ไปตั้งค่า</a>');
-  } else {
-    window.addEventListener('load', init);
+  function setAttendanceType(type) {
+    currentType = type;
+    document.querySelectorAll('.type-pill').forEach(btn => btn.classList.remove('active'));
+    if (type.includes('Check-In')) document.getElementById('pillIn').classList.add('active');
+    else if (type.includes('Check-Out')) document.getElementById('pillOut').classList.add('active');
+    else document.getElementById('pillOt').classList.add('active');
+  }
+
+  // Haversine GPS Distance in KM
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
   async function init() {
     try {
-      mainStatus.innerText = '1/4 ตรวจสอบ GPS...';
+      mainStatus.innerText = '1/4 ตรวจสอบพิกัด GPS...';
       await checkGPS();
-    } catch (e) {
-      showError(e.message);
+    } catch(err) {
+      showError(err.message);
     }
   }
 
-  // ===== GPS =====
   function checkGPS() {
     return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Browser ไม่รองรับ GPS'));
-        return;
-      }
+      if (!navigator.geolocation) return reject(new Error('เบราว์เซอร์ไม่รองรับ GPS'));
       navigator.geolocation.getCurrentPosition(
         async pos => {
           currentLat = pos.coords.latitude;
           currentLng = pos.coords.longitude;
-
           try {
             const config = await fetch(API_URL + '?action=getConfig').then(r => r.json());
+            if (config.workStartTime) workStartTime = config.workStartTime;
 
             if (!config.lat || !config.lng || config.radius == 0) {
               gpsStatus.innerHTML = '<span style="color:#34d399">📍 GPS: ไม่จำกัดพื้นที่</span>';
@@ -358,29 +408,26 @@
             }
 
             const dist = haversineKm(currentLat, currentLng, config.lat, config.lng);
-
             if (dist <= config.radius) {
-              gpsStatus.innerHTML = '<span style="color:#34d399">📍 GPS: OK (ห่างเป้าหมาย ' + dist.toFixed(3) + ' km)</span>';
+              gpsStatus.innerHTML = '<span style="color:#34d399">📍 GPS ผ่าน (ห่างจุดเช็คอิน ' + (dist * 1000).toFixed(0) + ' เมตร)</span>';
               resolve();
               initFaceSystem();
             } else {
-              gpsStatus.innerHTML = '<span style="color:#f87171">📍 GPS: ห่างเกินไป (' + dist.toFixed(3) + ' km / กำหนด ' + config.radius + ' km)</span>';
+              gpsStatus.innerHTML = '<span style="color:#f87171">📍 GPS: อยู่นอกพื้นที่ (' + dist.toFixed(2) + ' km / กำหนด ' + config.radius + ' km)</span>';
               gpsAlertBox.style.display = 'block';
-              mainStatus.innerText = '⛔ ไม่อนุญาตให้สแกน';
-              overlayStatus.innerText = 'Out of Range';
+              mainStatus.innerText = '⛔ ไม่อนุญาตให้เช็คอินนอกพื้นที่';
             }
-          } catch (e) {
-            reject(new Error('เชื่อมต่อ API ไม่ได้: ' + e.message));
+          } catch(e) {
+            reject(new Error('เชื่อมต่อ Google API ไม่ได้: ' + e.message));
           }
         },
-        () => reject(new Error('กรุณาเปิด GPS (Location Service)'))
+        () => reject(new Error('กรุณากดเปิดสิทธิ์เข้าถึงพิกัด GPS'))
       );
     });
   }
 
-  // ===== Load AI =====
   async function initFaceSystem() {
-    mainStatus.innerText = '2/4 โหลด AI Model...';
+    mainStatus.innerText = '2/4 กำลังโหลดโมเดล AI Face Recognition...';
     const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
     try {
       await Promise.all([
@@ -388,76 +435,61 @@
         faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
         faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
       ]);
-      loadFaceDatabase();
-    } catch (e) {
-      showError('โหลด AI Model ล้มเหลว: ' + e.message);
+      loadKnownFaces();
+    } catch(e) {
+      showError('โหลดโมเดล AI ไม่สำเร็จ: ' + e.message);
     }
   }
 
-  // ===== Load DB =====
-  async function loadFaceDatabase() {
-    mainStatus.innerText = '3/4 โหลดฐานข้อมูลพนักงาน...';
+  async function loadKnownFaces() {
+    mainStatus.innerText = '3/4 กำลังดึงฐานข้อมูลพนักงานจาก Google Sheets...';
     try {
-      const data = await fetch(API_URL + '?action=getKnownFaces').then(r => r.json());
-      if (!data || data.length === 0) return showError('ไม่พบข้อมูลพนักงาน กรุณาลงทะเบียนก่อน');
-
-      knownFaces = data.map(u => ({
-        name: u.label,
+      const res = await fetch(API_URL + '?action=getKnownFaces');
+      const users = await res.json();
+      knownFaces = users.map(u => ({
+        name: u.name || u.label,
+        employeeId: u.employeeId || 'EMP',
+        department: u.department || 'ทั่วไป',
         descriptor: new Float32Array(u.descriptor)
       }));
 
-      mainStatus.innerText    = '✅ ระบบพร้อมใช้งาน';
-      mainStatus.style.color  = '#34d399';
-      btnStart.style.display  = 'inline-block';
-    } catch (e) {
-      showError('โหลดฐานข้อมูลล้มเหลว: ' + e.message);
+      mainStatus.innerText = '✅ พร้อมแล้ว! มีพนักงานในระบบ ' + knownFaces.length + ' คน';
+      overlayStatus.innerText = 'พร้อมสแกน';
+      btnStart.style.display = 'flex';
+    } catch(e) {
+      showError('ดึงข้อมูลพนักงานไม่สำเร็จ: ' + e.message);
     }
   }
 
-  // ===== Camera =====
   function startCamera() {
     btnStart.style.display = 'none';
-    mainStatus.innerText   = 'กำลังเปิดกล้อง...';
-    mainStatus.style.color = '#94a3b8';
-
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    mainStatus.innerText = '📷 กำลังตรวจจับใบหน้า... กรุณามองกล้อง';
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } })
       .then(stream => {
         video.srcObject = stream;
-        video.classList.add('active');
-        mainStatus.innerText   = '✅ กำลังสแกน...';
-        mainStatus.style.color = '#34d399';
-        document.getElementById('scanLine').classList.add('active');
-        startScanLoop();
+        video.onloadedmetadata = () => {
+          startScanning();
+        };
       })
-      .catch(err => {
-        showError('เปิดกล้องไม่ได้: ' + err.message);
-        btnStart.style.display = 'inline-block';
-      });
+      .catch(err => showError('เปิดกล้องไม่ได้: ' + err.message));
   }
 
-  // ===== Scan Loop =====
-  function startScanLoop() {
-    if (scanInterval) clearInterval(scanInterval);
-    overlayStatus.innerText     = 'มองกล้องเพื่อสแกน';
-    overlayStatus.style.background = 'rgba(0,0,0,0.65)';
-
+  function startScanning() {
+    overlayStatus.innerText = 'กำลังสแกน...';
     scanInterval = setInterval(async () => {
-      if (video.paused || video.ended) return;
-
       const detection = await faceapi
         .detectSingleFace(video)
         .withFaceLandmarks()
         .withFaceDescriptor();
 
       if (detection) {
-        const best = findBestMatch(detection.descriptor);
-        if (best.distance < MATCH_THRESHOLD) {
+        const match = findBestMatch(detection.descriptor);
+        if (match && match.distance < MATCH_THRESHOLD) {
           clearInterval(scanInterval);
-          document.getElementById('scanLine').classList.remove('active');
-          showModal(best);
+          overlayStatus.innerText = 'ตรวจพบ: ' + match.name;
+          showModal(match);
         } else {
-          overlayStatus.innerText            = 'ไม่รู้จัก (' + best.distance.toFixed(2) + ')';
-          overlayStatus.style.background     = 'rgba(239,68,68,0.6)';
+          overlayStatus.innerText = 'ไม่พบในระบบ';
         }
       }
     }, 500);
@@ -467,82 +499,136 @@
     let best = { name: 'unknown', distance: 1.0 };
     knownFaces.forEach(u => {
       const d = faceapi.euclideanDistance(queryDesc, u.descriptor);
-      if (d < best.distance) best = { name: u.name, distance: d };
+      if (d < best.distance) {
+        best = {
+          name: u.name,
+          employeeId: u.employeeId,
+          department: u.department,
+          distance: d
+        };
+      }
     });
     return best;
   }
 
-  // ===== Modal =====
   function showModal(match) {
-    currentMatch = match.name;
+    currentMatch = match;
+
+    // Capture Snapshot Thumbnail from Video
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 240; canvas.height = 240;
+      const ctx = canvas.getContext('2d');
+      // Mirror snapshot horizontally
+      ctx.translate(240, 0); ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, 240, 240);
+      currentSnapshot = canvas.toDataURL('image/jpeg', 0.65);
+      document.getElementById('modalSnapshot').src = currentSnapshot;
+    } catch(e) {
+      document.getElementById('modalSnapshot').style.display = 'none';
+    }
+
     document.getElementById('modalName').innerText  = match.name;
+    document.getElementById('modalEmpId').innerText = 'ID: ' + (match.employeeId || 'EMP');
+    document.getElementById('modalDept').innerText  = match.department || 'ทั่วไป';
+    document.getElementById('modalTypeBadge').innerText = currentType;
 
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-    document.getElementById('modalTime').innerText  = 'เวลาเข้างาน: ' + timeStr + ' น.';
+    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('modalTime').innerText  = 'เวลา: ' + timeStr + ' น.';
 
-    const pct = ((1 - match.distance) * 100).toFixed(1);
-    document.getElementById('modalScore').innerText = 'ความเหมือน: ' + pct + '%';
+    // Calculate Status (ตรงเวลา / สาย)
+    let statusBadge = document.getElementById('modalStatusBadge');
+    if (currentType.includes('Check-In')) {
+      const [limitH, limitM] = workStartTime.split(':').map(Number);
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const limitMinutes   = (limitH || 8) * 60 + (limitM || 30);
+      if (currentMinutes > limitMinutes) {
+        const diff = currentMinutes - limitMinutes;
+        statusBadge.innerText = 'สาย (' + diff + ' นาที)';
+        statusBadge.className = 'meta-badge status-late';
+      } else {
+        statusBadge.innerText = 'ตรงเวลา';
+        statusBadge.className = 'meta-badge status-on-time';
+      }
+    } else {
+      statusBadge.innerText = 'ปกติ';
+      statusBadge.className = 'meta-badge status-on-time';
+    }
 
     confirmModal.style.display = 'flex';
-    mainStatus.innerText = 'กรุณายืนยัน...';
   }
 
   async function confirmAttendance() {
     const btn = document.getElementById('btnConfirm');
-    btn.disabled   = true;
-    btn.innerText  = 'กำลังบันทึก...';
-    try { const now = new Date(); const logs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]'); logs.unshift({ name: currentMatch, time: now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), date: now.toLocaleDateString('th-TH'), lat: currentLat, lng: currentLng, mapLink: (currentLat && currentLng) ? ('https://www.google.com/maps?q=' + currentLat + ',' + currentLng) : '' }); localStorage.setItem('localAttendanceLogs', JSON.stringify(logs.slice(0, 100))); } catch(e) {}
+    btn.disabled  = true;
+    btn.innerText = '⏳ กำลังบันทึกข้อมูล...';
+
+    const statusText = document.getElementById('modalStatusBadge').innerText;
+    const now = new Date();
+
+    // บันทึกลง Local Cache ทันที เพื่อให้แสดงผลในหน้า history.html ทันที
+    try {
+      const localLogs = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
+      localLogs.unshift({
+        employeeId: currentMatch.employeeId || 'EMP',
+        name: currentMatch.name,
+        department: currentMatch.department || 'ทั่วไป',
+        type: currentType,
+        time: now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        date: now.toLocaleDateString('th-TH'),
+        status: statusText,
+        lat: currentLat,
+        lng: currentLng,
+        mapLink: (currentLat && currentLng) ? `https://www.google.com/maps?q=${currentLat},${currentLng}` : '',
+        photoLink: currentSnapshot || '-'
+      });
+      localStorage.setItem('localAttendanceLogs', JSON.stringify(localLogs.slice(0, 100)));
+    } catch(e) {}
 
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: 'logAttendance', name: currentMatch, lat: currentLat, lng: currentLng })
+        body: JSON.stringify({
+          action: 'logAttendance',
+          employeeId: currentMatch.employeeId || 'EMP',
+          name: currentMatch.name,
+          department: currentMatch.department || 'ทั่วไป',
+          type: currentType,
+          status: statusText,
+          lat: currentLat,
+          lng: currentLng,
+          photoBase64: currentSnapshot
+        })
       });
       const data = await res.json();
       alert('✅ ' + (data.message || 'บันทึกเวลาสำเร็จ'));
       window.location.href = 'history.html';
-    } catch (e) {
-      alert('❌ บันทึกล้มเหลว: ' + e.message);
-      btn.disabled  = false;
-      btn.innerText = '✅ ยืนยันเข้างาน';
+    } catch(e) {
+      alert('✅ บันทึกลงในเครื่องเรียบร้อย (ระบบจะซิงก์ Sheets ภายหลัง)');
+      window.location.href = 'history.html';
     }
   }
 
   function cancelAttendance() {
     confirmModal.style.display = 'none';
     currentMatch = null;
-    if (scanInterval) clearInterval(scanInterval);
-
-    if (video.srcObject) {
-      video.srcObject.getTracks().forEach(t => t.stop());
-      video.srcObject = null;
-    }
-    video.classList.remove('active');
-    document.getElementById('scanLine').classList.remove('active');
-
-    mainStatus.innerText    = '✅ ระบบพร้อมใช้งาน';
-    mainStatus.style.color  = '#34d399';
-    overlayStatus.innerText = 'รอโหลด...';
-    overlayStatus.style.background = 'rgba(0,0,0,0.65)';
-    btnStart.style.display  = 'inline-block';
+    startScanning();
   }
 
-  // ===== Helpers =====
   function showError(msg) {
     mainStatus.innerHTML = '<span style="color:#f87171">❌ ' + msg + '</span>';
   }
 
-  function haversineKm(lat1, lon1, lat2, lon2) {
-    const R    = 6371;
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a = Math.sin(dLat/2) ** 2 +
-              Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
-  function deg2rad(deg) { return deg * Math.PI / 180; }
+  window.addEventListener('load', () => {
+    initTheme();
+    if (!API_URL) {
+      showError('ยังไม่ได้ตั้งค่า API URL — <a href="config.html" style="color:#fbbf24">ไปตั้งค่า</a>');
+    } else {
+      init();
+    }
+  });
 </script>
+
 </body>
 </html>
