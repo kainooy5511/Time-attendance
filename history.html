@@ -344,6 +344,19 @@
       background: #f8fafc;
       color: #64748b;
     }
+    .a4-timesheet-table tr.weekend-work-row {
+      background: #f5f3ff;
+    }
+    .weekend-work-tag {
+      display: inline-block;
+      padding: 0 5px;
+      margin-right: 3px;
+      border-radius: 3px;
+      background: #7c3aed;
+      color: #ffffff;
+      font-size: 8px;
+      font-weight: 700;
+    }
     .a4-timesheet-table tr.late-row td:nth-child(5) {
       color: #c2410c;
       font-weight: 700;
@@ -1305,6 +1318,10 @@
         }
         totalOtHours += ot;
         if (ot > 0) rowClass += ' ot-row';
+        if (isWeekend) {
+          rowClass = rowClass.replace('weekend-row', 'weekend-work-row');
+          status = `<span class="weekend-work-tag">ทำงานวันหยุด</span> ${status}`;
+        }
       } else {
         if (isWeekend) {
           status = `วันหยุด (${dayOfWeek})`;
@@ -1329,8 +1346,6 @@
           <td>${timeOut}</td>
           <td style="text-align:left; padding-left:6px;">${status}</td>
           <td>${ot > 0 ? ot : '0'}</td>
-          <td style="color:#94a3b8; font-size:8px;">..................</td>
-          <td style="color:#94a3b8; font-size:8px;">..................</td>
         </tr>
       `;
     }
@@ -1372,14 +1387,12 @@
       <table class="a4-timesheet-table">
         <thead>
           <tr>
-            <th style="width: 11%;">วันที่</th>
-            <th style="width: 10%;">วัน</th>
-            <th style="width: 12%;">เวลาเข้า (In)</th>
-            <th style="width: 12%;">เวลาออก (Out)</th>
-            <th style="width: 27%;">สถานะการลงเวลา (Attendance Status)</th>
-            <th style="width: 8%;">OT (ชม.)</th>
-            <th style="width: 10%;">ลายเซ็นพนักงาน</th>
-            <th style="width: 10%;">ลายเซ็นผู้อนุมัติ</th>
+            <th style="width: 13%;">วันที่</th>
+            <th style="width: 11%;">วัน</th>
+            <th style="width: 13%;">เวลาเข้า (In)</th>
+            <th style="width: 13%;">เวลาออก (Out)</th>
+            <th style="width: 40%;">สถานะการลงเวลา (Attendance Status)</th>
+            <th style="width: 10%;">OT (ชม.)</th>
           </tr>
         </thead>
         <tbody>
