@@ -301,6 +301,119 @@
       font-size: 16px; font-weight: 600; cursor: pointer;
     }
 
+    /* Daily Attendance Card below Scanner */
+    .daily-card-wrap {
+      width: 100%;
+      margin-top: 16px;
+      animation: fadeIn 0.4s ease;
+    }
+    .daily-card-inner {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+    }
+    .daily-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .daily-user-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .daily-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+      flex-shrink: 0;
+    }
+    .daily-user-name {
+      font-size: 1em;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+    .daily-user-sub {
+      font-size: 0.76em;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .daily-date {
+      font-size: 0.8em;
+      font-weight: 600;
+      padding: 4px 10px;
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+    .daily-status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .daily-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .daily-item.in-item {
+      border-left: 4px solid #10b981;
+    }
+    .daily-item.out-item {
+      border-left: 4px solid #f59e0b;
+    }
+    .daily-item-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .in-dot { background: #10b981; box-shadow: 0 0 6px #10b981; }
+    .out-dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .daily-item-title {
+      font-size: 0.78em;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .daily-item-time {
+      font-size: 1.15em;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 2px 0;
+    }
+    .daily-item-status {
+      font-size: 0.74em;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .status-good { color: #34d399; }
+    .status-late { color: #f87171; font-weight: 700; }
+    .status-ot { color: #fbbf24; font-weight: 700; }
+    .status-normal { color: #38bdf8; }
+    .status-pending { color: var(--text-muted); }
+
     @keyframes popIn {
       from { transform: scale(0.85); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
@@ -340,6 +453,44 @@
   </div>
 
   <button id="btnStart" class="btn-start" onclick="startCameraManual()" style="display:none;">📷 เปิดกล้องสแกนใบหน้า</button>
+
+  <!-- Daily Summary Card at the bottom of Scan screen -->
+  <div id="dailyCardWrap" class="daily-card-wrap">
+    <div class="daily-card-inner">
+      <div class="daily-card-header">
+        <div class="daily-user-badge">
+          <div class="daily-avatar" id="dailyAvatar">👤</div>
+          <div>
+            <div class="daily-user-name" id="dailyUserName">ยังไม่มีการสแกน</div>
+            <div class="daily-user-sub" id="dailyUserSub">ส่องหน้าเพื่อบันทึกและดูสรุปประจำวัน</div>
+          </div>
+        </div>
+        <div class="daily-date" id="dailyDate">📅 วันที่ --/--/----</div>
+      </div>
+
+      <div class="daily-status-grid">
+        <!-- 1. Check-In Item -->
+        <div class="daily-item in-item" id="dailyInItem">
+          <div class="daily-item-top">
+            <span class="status-dot in-dot"></span>
+            <span class="daily-item-title">Check in (เข้างาน)</span>
+          </div>
+          <div class="daily-item-time" id="dailyInTime">--:--:--</div>
+          <div class="daily-item-status status-pending" id="dailyInStatus">- ยังไม่ลงเวลาเข้างาน -</div>
+        </div>
+
+        <!-- 2. Check-Out Item -->
+        <div class="daily-item out-item" id="dailyOutItem">
+          <div class="daily-item-top">
+            <span class="status-dot out-dot"></span>
+            <span class="daily-item-title">Check out (ออกงาน)</span>
+          </div>
+          <div class="daily-item-time" id="dailyOutTime">--:--:--</div>
+          <div class="daily-item-status status-pending" id="dailyOutStatus">- รอลงเวลาออกงาน -</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal 1: Confirm Details -->
@@ -544,6 +695,17 @@
     );
   }
 
+  function isSameDateAsToday(dateVal) {
+    if (!dateVal) return false;
+    const now = new Date();
+    const d = now.getDate();
+    const m = now.getMonth() + 1;
+    const s = String(dateVal).replace(/'/g, '').trim();
+    const parts = s.split(/[/ -]/);
+    if (parts.length >= 2) return parseInt(parts[0], 10) === d && parseInt(parts[1], 10) === m;
+    return false;
+  }
+
   // 5. ขนานที่ 4: ดึงข้อมูลพนักงานล่าสุดใน Background มาอัปเดตแคช
   async function syncDataBackground() {
     try {
@@ -565,17 +727,20 @@
           }));
       }
 
-      function isSameDateAsToday(dateVal) {
-        if (!dateVal) return false;
-        const now = new Date();
-        const d = now.getDate();
-        const m = now.getMonth() + 1;
-        const s = String(dateVal).replace(/'/g, '').trim();
-        const parts = s.split(/[/ -]/);
-        if (parts.length >= 2) return parseInt(parts[0], 10) === d && parseInt(parts[1], 10) === m;
-        return false;
+      const serverToday = (attRes || []).filter(item => isSameDateAsToday(item.date));
+      const combined = [...serverToday];
+      todayLogs.forEach(localItem => {
+        if (!combined.some(c => (c.employeeId === localItem.employeeId || c.name === localItem.name) && c.time === localItem.time)) {
+          combined.unshift(localItem);
+        }
+      });
+      todayLogs = combined;
+
+      const lastEmpId = localStorage.getItem('last_scanned_empid');
+      if (lastEmpId && knownFaces.length > 0) {
+        const lastUser = knownFaces.find(u => u.employeeId === lastEmpId);
+        if (lastUser) updateDailyCard(lastUser);
       }
-      todayLogs = (attRes || []).filter(item => isSameDateAsToday(item.date));
 
       mainStatus.innerText = '✅ พร้อมสแกน! มีพนักงานในระบบ ' + knownFaces.length + ' คน';
     } catch(e) {}
@@ -631,8 +796,118 @@
     }, 200);
   }
 
+  function updateDailyCard(targetEmp) {
+    if (!targetEmp) return;
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    const dateEl = document.getElementById('dailyDate');
+    if (dateEl) dateEl.innerText = `📅 วันที่ ${d}/${m}/${y}`;
+
+    const userNameEl = document.getElementById('dailyUserName');
+    const userSubEl = document.getElementById('dailyUserSub');
+    if (userNameEl) userNameEl.innerText = targetEmp.name || 'พนักงาน';
+    if (userSubEl) userSubEl.innerText = `ID: ${targetEmp.employeeId || 'EMP'} · แผนก ${targetEmp.department || 'ทั่วไป'}`;
+
+    // กรองเฉพาะประวัติการลงเวลาของพนักงานคนนี้ในวันนี้เท่านั้น
+    const empLogs = todayLogs.filter(log =>
+      (targetEmp.employeeId && log.employeeId === targetEmp.employeeId) ||
+      log.name === targetEmp.name
+    );
+
+    // 1. ตรวจสอบข้อมูล Check-in (เข้างาน)
+    const checkIn = empLogs.find(l => (l.type || '').includes('เข้างาน') || (l.type || '').includes('Check-In')) || (empLogs.length > 0 ? empLogs[0] : null);
+    const inTimeEl = document.getElementById('dailyInTime');
+    const inStatusEl = document.getElementById('dailyInStatus');
+
+    if (checkIn && checkIn.time) {
+      inTimeEl.innerText = checkIn.time + ' น.';
+      const [limitH, limitM] = (workStartTime || '08:30').split(':').map(Number);
+      const limitTotalMin = (limitH || 8) * 60 + (limitM || 30);
+      const timeParts = checkIn.time.split(':').map(Number);
+      const inTotalMin = timeParts.length >= 2 ? timeParts[0] * 60 + timeParts[1] : null;
+
+      if (inTotalMin !== null) {
+        if (inTotalMin <= limitTotalMin) {
+          const diff = limitTotalMin - inTotalMin;
+          inStatusEl.innerText = diff > 0 ? `✅ ปกติ (ก่อนเวลา ${diff} นาที)` : `✅ ปกติ (ตรงเวลา)`;
+          inStatusEl.className = 'daily-item-status status-good';
+        } else {
+          const lateDiff = inTotalMin - limitTotalMin;
+          inStatusEl.innerText = `⚠️ สาย ${lateDiff} นาที`;
+          inStatusEl.className = 'daily-item-status status-late';
+        }
+      } else {
+        inStatusEl.innerText = checkIn.status || 'ปกติ';
+        inStatusEl.className = 'daily-item-status status-good';
+      }
+    } else {
+      inTimeEl.innerText = '--:--:--';
+      inStatusEl.innerText = '- ยังไม่ลงเวลาเข้างาน -';
+      inStatusEl.className = 'daily-item-status status-pending';
+    }
+
+    // 2. ตรวจสอบข้อมูล Check-out (ออกงาน)
+    const checkOut = empLogs.find(l => (l.type || '').includes('ออกงาน') || (l.type || '').includes('Check-Out')) || (empLogs.length > 1 ? empLogs[empLogs.length - 1] : null);
+    const outTimeEl = document.getElementById('dailyOutTime');
+    const outStatusEl = document.getElementById('dailyOutStatus');
+
+    if (checkOut && checkOut.time && checkOut !== checkIn) {
+      outTimeEl.innerText = checkOut.time + ' น.';
+      const [otH, otM] = (otStartTime || '17:00').split(':').map(Number);
+      const otLimitTotalMin = (otH || 17) * 60 + (otM || 0);
+      const timeParts = checkOut.time.split(':').map(Number);
+      const outTotalMin = timeParts.length >= 2 ? timeParts[0] * 60 + timeParts[1] : null;
+
+      if (outTotalMin !== null) {
+        if (outTotalMin > otLimitTotalMin) {
+          const otDiffMin = outTotalMin - otLimitTotalMin;
+          const fullOtHours = Math.floor(otDiffMin / 60);
+          if (fullOtHours >= 1) {
+            outStatusEl.innerText = `⏱️ OT: ${fullOtHours} ชั่วโมงเต็ม`;
+            outStatusEl.className = 'daily-item-status status-ot';
+          } else {
+            outStatusEl.innerText = `✅ ปกติ (เกิน 17:00 น. แต่ OT ยังไม่ครบ 1 ชม.)`;
+            outStatusEl.className = 'daily-item-status status-normal';
+          }
+        } else {
+          outStatusEl.innerText = `✅ ปกติ (ออกงานตรงเวลา)`;
+          outStatusEl.className = 'daily-item-status status-normal';
+        }
+      } else {
+        outStatusEl.innerText = checkOut.status || 'ปกติ';
+        outStatusEl.className = 'daily-item-status status-normal';
+      }
+    } else {
+      outTimeEl.innerText = '--:--:--';
+      outStatusEl.innerText = '- รอลงเวลาออกงาน -';
+      outStatusEl.className = 'daily-item-status status-pending';
+    }
+  }
+
   function init() {
     initCachedFaces();
+
+    try {
+      const local = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
+      todayLogs = (Array.isArray(local) ? local : []).filter(item => isSameDateAsToday(item.date));
+    } catch(e) {}
+
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    const dateEl = document.getElementById('dailyDate');
+    if (dateEl) dateEl.innerText = `📅 วันที่ ${d}/${m}/${y}`;
+
+    // ถ้ามีพนักงานที่สแกนล่าสุดในเครื่องนี้ ให้แสดงสถานะของเขาไว้ทันที
+    const lastEmpId = localStorage.getItem('last_scanned_empid');
+    if (lastEmpId && knownFaces.length > 0) {
+      const lastUser = knownFaces.find(u => u.employeeId === lastEmpId);
+      if (lastUser) updateDailyCard(lastUser);
+    }
+
     startCameraAuto();
     initModelsParallel();
     checkGPSBackground();
@@ -665,6 +940,7 @@
 
   function showModal(match) {
     currentMatch = match;
+    updateDailyCard(match);
 
     try {
       const canvas = document.createElement('canvas');
@@ -782,6 +1058,8 @@
       localLogs.unshift(newRecord);
       localStorage.setItem('localAttendanceLogs', JSON.stringify(localLogs.slice(0, 100)));
       localStorage.setItem('last_scanned_empid', currentMatch.employeeId);
+      todayLogs.unshift(newRecord);
+      updateDailyCard(currentMatch);
     } catch(e) {}
 
     // 2. OPTIMISTIC UI: สลับหน้าจอแจ้ง "สำเร็จ" ทันทีใน 0.05 วินาที! พนักงานไม่ต้องยืนรอโหลด
@@ -845,16 +1123,24 @@
 
   function closeSuccessAndReset() {
     successModal.style.display = 'none';
-    btnConfirm.disabled = false;
-    btnConfirm.innerText = '✅ ยืนยันการลงเวลา';
+    const btnConfirm = document.getElementById('btnConfirm');
+    if (btnConfirm) {
+      btnConfirm.disabled = false;
+      btnConfirm.innerText = '✅ ยืนยันการลงเวลา';
+    }
+    if (currentMatch) {
+      updateDailyCard(currentMatch);
+    }
     currentMatch = null;
-    startScanning(); // resume camera scanning for next person!
+    isScanning = false;
+    checkAndStartAutoScan(); // กลับมาเริ่มสแกนอัตโนมัติสำหรับคนต่อไปทันที
   }
 
   function cancelAttendance() {
     confirmModal.style.display = 'none';
     currentMatch = null;
-    startScanning();
+    isScanning = false;
+    checkAndStartAutoScan();
   }
 
   function showError(msg) {
