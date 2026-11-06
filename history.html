@@ -650,16 +650,44 @@
   const API_URL = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
 
   // 1. Initial Load of Users for PIN Selector (Instant Cache + Background Network)
+  // รวมรายชื่อพนักงานที่สแกนใบหน้า 3 มุม (3 แถวในชีต) ให้เหลือ 1 รายชื่อต่อ 1 คน และกรองข้อมูลตัวอย่างออก
+  function deduplicateUsers(rawUsers) {
+    if (!Array.isArray(rawUsers)) return [];
+    const uniqueMap = new Map();
+    rawUsers.forEach(u => {
+      if (!u) return;
+      const rawName = String(u.name || u.label || '').trim();
+      const rawId = String(u.employeeId || '').trim();
+      if (!rawName) return;
+
+      // กรองข้อมูลตัวอย่าง (Mockup) หรือแถวที่ไม่ใช่ข้อมูลพนักงานจริงออก
+      if (rawName === 'แอดมิน สมศักดิ์' || rawId === 'EMP001' || rawName === 'ทดสอบ สมชาย') return;
+      if (u.descriptor && Array.isArray(u.descriptor) && u.descriptor.length > 0 && u.descriptor.length !== 128) return;
+
+      // ใช้รหัสพนักงาน (หรือชื่อหากไม่มีรหัส) เป็น Key เพื่อรวม 3 มุมใบหน้าให้เป็น 1 รายชื่อเดียว
+      const key = (rawId || rawName).toUpperCase();
+      uniqueMap.set(key, {
+        employeeId: rawId || 'EMP',
+        name: rawName,
+        department: String(u.department || 'ทั่วไป').trim(),
+        role: String(u.role || 'พนักงานทั่วไป').trim(),
+        pin: String(u.pin || '').replace(/'/g, '').trim()
+      });
+    });
+    return Array.from(uniqueMap.values());
+  }
+
   function renderUserDropdown(users) {
     const sel = document.getElementById('userSelector');
+    const uniqueUsers = deduplicateUsers(users);
     let opts = '<option value="__admin__">👑 ผู้ดูแลระบบ (Admin)</option>';
-    users.forEach(u => {
+    uniqueUsers.forEach(u => {
       opts += `<option value="${u.employeeId}">${u.name} (${u.employeeId})</option>`;
     });
     sel.innerHTML = opts;
 
     const lastId = localStorage.getItem('last_scanned_empid');
-    if (lastId && users.some(u => u.employeeId === lastId)) {
+    if (lastId && uniqueUsers.some(u => u.employeeId === lastId)) {
       sel.value = lastId;
     }
   }
@@ -669,7 +697,7 @@
     try {
       const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
       if (Array.isArray(cached) && cached.length > 0) {
-        registeredUsers = cached;
+        registeredUsers = deduplicateUsers(cached);
         renderUserDropdown(registeredUsers);
       }
     } catch(e) {}
@@ -679,8 +707,8 @@
       const res = await fetch(API_URL + '?action=getKnownFaces');
       const latest = await res.json();
       if (Array.isArray(latest) && latest.length > 0) {
-        registeredUsers = latest;
         localStorage.setItem('cached_known_faces', JSON.stringify(latest));
+        registeredUsers = deduplicateUsers(latest);
         renderUserDropdown(registeredUsers);
       }
     } catch(e) {}
@@ -806,7 +834,7 @@
 
   function populateAdminDropdowns(records) {
     const empSelect = document.getElementById('empFilter');
-    const uniqueEmployees = [...new Set(records.map(r => r.name).filter(Boolean))];
+    const uniqueEmployees = [...new Set(records.map(r => String(r.name || '').trim()).filter(Boolean))];
     empSelect.innerHTML = '<option value="">👥 พนักงานทุกคน (ทั้งหมด)</option>' +
       uniqueEmployees.map(name => `<option value="${name}">${name}</option>`).join('');
 
@@ -1010,15 +1038,17 @@
           department: (empRec && empRec.department) || 'ทั่วไป'
         }];
       } else {
-        // ทุกคน: รวบรวมรายชื่อพนักงานทั้งหมดที่มีข้อมูลในรอบนี้
+        // ทุกคน: รวบรวมรายชื่อพนักงานทั้งหมดที่มีข้อมูลในรอบนี้ (ไม่ซ้ำ)
         const empMap = new Map();
         currentFiltered.forEach(r => {
-          const key = r.name || r.employeeId;
+          const rawId = String(r.employeeId || '').trim();
+          const rawName = String(r.name || '').trim();
+          const key = ((rawId && rawId !== '-') ? rawId : rawName).toUpperCase();
           if (key && !empMap.has(key)) {
             empMap.set(key, {
-              employeeId: r.employeeId || '-',
-              name: r.name || '-',
-              department: r.department || 'ทั่วไป'
+              employeeId: rawId || '-',
+              name: rawName || '-',
+              department: String(r.department || 'ทั่วไป').trim()
             });
           }
         });
@@ -1040,7 +1070,7 @@
         ['รอบประจำเดือน:', `${thaiMonthNames[m] || ('เดือน ' + m)} ${y} (วันที่ 1 - ${daysInMonth})`, '', 'วันที่พิมพ์รายงาน:', new Date().toLocaleDateString('th-TH')],
         ['รหัสพนักงาน:', emp.employeeId, 'ชื่อ-นามสกุล:', emp.name, 'แผนก / ฝ่าย:', emp.department],
         [],
-        ['วันที่', 'วันในสัปดาห์', 'เวลาเข้า (Time In)', 'เวลาออก (Time Out)', 'สถานะการลงเวลา (Status)', 'ชั่วโมง OT', 'ลายเซ็นพนักงาน', 'ลายเซ็นผู้อนุมัติ']
+        ['วันที่', 'วันในสัปดาห์', 'เวลาเข้า (Time In)', 'เวลาออก (Time Out)', 'สถานะการลงเวลา (Status)', 'ชั่วโมง OT']
       ];
 
       let totalWorkDays = 0;
@@ -1092,6 +1122,9 @@
           } else {
             status = 'ปกติ (ตรงเวลา)';
           }
+          if (isWeekend) {
+            status = `[ทำงานวันหยุด] ${status}`;
+          }
           totalOtHours += ot;
         } else {
           if (isWeekend) {
@@ -1114,16 +1147,14 @@
           timeIn,
           timeOut,
           status,
-          ot > 0 ? ot : 0,
-          '________________________',
-          '________________________'
+          ot > 0 ? ot : 0
         ]);
       }
 
       aoa.push([]);
       aoa.push(['สรุปผลรอบเดือน:', '', `วันทำงานจริง: ${totalWorkDays} วัน`, `มาสาย: ${totalLateCount} ครั้ง`, `รวม OT: ${totalOtHours} ชม.`]);
       aoa.push([]);
-      aoa.push(['ลงชื่อผู้จัดทำ (HR): _____________________________', '', '', 'ลงชื่อผู้อนุมัติ (Manager): _____________________________']);
+      aoa.push([`ลงชื่อพนักงาน (${emp.name}): _____________________`, '', 'ลงชื่อผู้จัดทำ (HR): _____________________', '', 'ลงชื่อผู้อนุมัติ (Manager): _____________________']);
 
       const ws = XLSX.utils.aoa_to_sheet(aoa);
 
@@ -1132,10 +1163,8 @@
         { wch: 14 }, // วันในสัปดาห์
         { wch: 14 }, // เวลาเข้า
         { wch: 14 }, // เวลาออก
-        { wch: 34 }, // สถานะการลงเวลา
-        { wch: 12 }, // ชั่วโมง OT
-        { wch: 26 }, // ลายเซ็นพนักงาน
-        { wch: 26 }  // ลายเซ็นผู้อนุมัติ
+        { wch: 42 }, // สถานะการลงเวลา
+        { wch: 14 }  // ชั่วโมง OT
       ];
 
       ws['!pageSetup'] = {
@@ -1196,12 +1225,14 @@
       } else {
         const empMap = new Map();
         currentFiltered.forEach(r => {
-          const key = r.name || r.employeeId;
+          const rawId = String(r.employeeId || '').trim();
+          const rawName = String(r.name || '').trim();
+          const key = ((rawId && rawId !== '-') ? rawId : rawName).toUpperCase();
           if (key && !empMap.has(key)) {
             empMap.set(key, {
-              employeeId: r.employeeId || '-',
-              name: r.name || '-',
-              department: r.department || 'ทั่วไป'
+              employeeId: rawId || '-',
+              name: rawName || '-',
+              department: String(r.department || 'ทั่วไป').trim()
             });
           }
         });

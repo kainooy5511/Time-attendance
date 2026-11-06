@@ -369,7 +369,10 @@
   }
 
   async function saveFace() {
-    const empId = document.getElementById('employeeId').value.trim() || ('EMP' + Math.floor(1000 + Math.random() * 9000));
+    const empIdEl = document.getElementById('employeeId');
+    const empId = empIdEl.value.trim() || ('EMP' + Math.floor(1000 + Math.random() * 9000));
+    empIdEl.value = empId; // ล็อกรหัสพนักงานให้คงที่ทั้ง 3 มุมใบหน้า ไม่ให้สุ่มรหัสใหม่ในมุมที่ 2-3
+
     const name  = document.getElementById('username').value.trim();
     const dept  = document.getElementById('department').value;
     const role  = document.getElementById('role').value;
@@ -411,29 +414,36 @@
       });
       const data = await res.json();
 
+      // ล็อกช่องกรอกข้อมูลหลังบันทึกมุมที่ 1 สำเร็จ เพื่อให้ทั้ง 3 มุมใช้รหัสและชื่อเดียวกัน 100%
+      empIdEl.readOnly = true;
+      document.getElementById('username').readOnly = true;
+      document.getElementById('userPin').readOnly = true;
+      document.getElementById('department').disabled = true;
+      document.getElementById('role').disabled = true;
+
+      // บันทึกข้อมูลมุมใบหน้าลงแคชทันที
+      try {
+        const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
+        cached.push({
+          name: name,
+          label: name,
+          employeeId: empId,
+          department: dept,
+          role: role,
+          pin: pin,
+          descriptor: descriptorArray
+        });
+        localStorage.setItem('cached_known_faces', JSON.stringify(cached));
+      } catch(e) {}
+
       saveCounter++;
       countSpan.innerText = saveCounter + ' / 3';
       updateDots();
 
       if (saveCounter >= 3) {
-        msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนสำเร็จเรียบร้อย! (สิทธิ์: ' + role + ' | PIN: ' + pin + ')</span>';
+        msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนครบ 3 มุมสำเร็จ! (รวมเป็น 1 รายชื่อเดียวอัตโนมัติ | สิทธิ์: ' + role + ' | PIN: ' + pin + ')</span>';
         btnSave.innerHTML = '✅ ลงทะเบียนสำเร็จ';
         btnSave.disabled = true;
-
-        // บันทึกลงแคชทันทีเพื่อให้หน้าสแกนตรวจจับใบหน้าได้ทันทีโดยไม่ต้องรอรอบซิงก์
-        try {
-          const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
-          cached.push({
-            name: name,
-            label: name,
-            employeeId: empId,
-            department: dept,
-            role: role,
-            pin: pin,
-            descriptor: descriptorArray
-          });
-          localStorage.setItem('cached_known_faces', JSON.stringify(cached));
-        } catch(e) {}
 
         setTimeout(() => { window.location.href = 'index.html'; }, 2000);
       } else {

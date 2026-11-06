@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V8 - A4 Print without per-row signatures + weekend work tag)
-const CACHE_NAME = 'attendance-pwa-v8';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V9 - User Deduplication & Multi-Angle Face Lock)
+const CACHE_NAME = 'attendance-pwa-v9';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที

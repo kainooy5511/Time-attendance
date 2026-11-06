@@ -839,12 +839,12 @@
       const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
       if (Array.isArray(cached) && cached.length > 0) {
         knownFaces = cached
-          .filter(u => u && u.descriptor && (u.descriptor.length === 128 || (Array.isArray(u.descriptor) && u.descriptor.length === 128)))
+          .filter(u => u && u.name !== 'แอดมิน สมศักดิ์' && u.employeeId !== 'EMP001' && u.descriptor && (u.descriptor.length === 128 || (Array.isArray(u.descriptor) && u.descriptor.length === 128)))
           .map(u => ({
-            name: u.name || u.label,
-            employeeId: u.employeeId || 'EMP',
-            department: u.department || 'ทั่วไป',
-            role: u.role || 'พนักงานทั่วไป',
+            name: String(u.name || u.label || '').trim(),
+            employeeId: String(u.employeeId || 'EMP').trim(),
+            department: String(u.department || 'ทั่วไป').trim(),
+            role: String(u.role || 'พนักงานทั่วไป').trim(),
             descriptor: new Float32Array(u.descriptor)
           }));
       }
@@ -1057,12 +1057,12 @@
       if (Array.isArray(usersRes) && usersRes.length > 0) {
         localStorage.setItem('cached_known_faces', JSON.stringify(usersRes));
         knownFaces = usersRes
-          .filter(u => u && u.descriptor && (u.descriptor.length === 128 || (Array.isArray(u.descriptor) && u.descriptor.length === 128)))
+          .filter(u => u && u.name !== 'แอดมิน สมศักดิ์' && u.employeeId !== 'EMP001' && u.descriptor && (u.descriptor.length === 128 || (Array.isArray(u.descriptor) && u.descriptor.length === 128)))
           .map(u => ({
-            name: u.name || u.label,
-            employeeId: u.employeeId || 'EMP',
-            department: u.department || 'ทั่วไป',
-            role: u.role || 'พนักงานทั่วไป',
+            name: String(u.name || u.label || '').trim(),
+            employeeId: String(u.employeeId || 'EMP').trim(),
+            department: String(u.department || 'ทั่วไป').trim(),
+            role: String(u.role || 'พนักงานทั่วไป').trim(),
             descriptor: new Float32Array(u.descriptor)
           }));
       }
@@ -1082,7 +1082,8 @@
         if (lastUser) updateDailyCard(lastUser);
       }
 
-      mainStatus.innerText = '✅ พร้อมสแกน! มีพนักงานในระบบ ' + knownFaces.length + ' คน';
+      const uniqueEmpCount = new Set(knownFaces.map(u => (u.employeeId || u.name).toUpperCase())).size;
+      mainStatus.innerText = '✅ พร้อมสแกน! มีพนักงานในระบบ ' + uniqueEmpCount + ' คน';
     } catch(e) {}
   }
 
