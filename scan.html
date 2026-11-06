@@ -380,6 +380,10 @@
     .daily-item.out-item {
       border-left: 4px solid #f59e0b;
     }
+    .daily-item.early-item {
+      border-left: 4px solid #fbbf24;
+      background: rgba(251, 191, 36, 0.06);
+    }
     .daily-item-top {
       display: flex;
       align-items: center;
@@ -410,9 +414,23 @@
     }
     .status-good { color: #34d399; }
     .status-late { color: #f87171; font-weight: 700; }
-    .status-ot { color: #fbbf24; font-weight: 700; }
+    .status-early { color: #fbbf24; font-weight: 700; }
+    .status-ot { color: #38bdf8; font-weight: 700; }
     .status-normal { color: #38bdf8; }
     .status-pending { color: var(--text-muted); }
+
+    .daily-schedule-hint {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      font-size: 0.74em;
+      color: var(--text-muted);
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
 
     @keyframes popIn {
       from { transform: scale(0.85); opacity: 0; }
@@ -489,6 +507,12 @@
           <div class="daily-item-status status-pending" id="dailyOutStatus">- รอลงเวลาออกงาน -</div>
         </div>
       </div>
+
+      <div class="daily-schedule-hint" id="dailyScheduleHint">
+        <span>⏰ เริ่มงาน: <strong id="hintWorkStart" style="color:var(--text-main);">08:00</strong> น.</span>
+        <span>•</span>
+        <span>⏱️ เริ่มนับ OT: <strong id="hintOtStart" style="color:var(--text-main);">17:00</strong> น.</span>
+      </div>
     </div>
   </div>
 </div>
@@ -562,8 +586,45 @@
   // เกณฑ์ระยะห่างใบหน้า (0.58 มาตรฐานสากล แม่นยำ ว่องไว)
   const MATCH_THRESHOLD = 0.58;
 
-  let workStartTime = '08:30';
-  let otStartTime   = '17:00';
+  function parseWorkStartTime(val) {
+    if (!val) return '08:00';
+    const s = String(val).replace(/'/g, '').trim();
+    const m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) return m[1].padStart(2, '0') + ':' + m[2];
+    return '08:00';
+  }
+
+  function parseOtStartTime(val) {
+    if (!val) return '17:00';
+    const s = String(val).replace(/'/g, '').trim();
+    const m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) {
+      let h = parseInt(m[1], 10);
+      const min = m[2];
+      if (h >= 1 && h <= 6) h += 12; // 5 โมงเย็น -> 17:00 น.
+      return String(h).padStart(2, '0') + ':' + min;
+    }
+    return '17:00';
+  }
+
+  // โหลดเวลาเข้างานและเวลาเริ่มนับ OT ตามหน้า Setting (localStorage หรือ Google Sheets)
+  let workStartTime = parseWorkStartTime(localStorage.getItem('work_start_time')) || '08:00';
+  let otStartTime   = parseOtStartTime(localStorage.getItem('ot_start_time'))   || '17:00';
+
+  function updateScheduleHint() {
+    const wsEl = document.getElementById('hintWorkStart');
+    const otEl = document.getElementById('hintOtStart');
+    if (wsEl) wsEl.innerText = workStartTime;
+    if (otEl) otEl.innerText = otStartTime;
+  }
+
+  function timeStringToMinutes(timeStr, defaultH = 8, defaultM = 0) {
+    if (!timeStr) return defaultH * 60 + defaultM;
+    const parts = timeStr.split(':').map(Number);
+    const h = (parts.length >= 1 && !isNaN(parts[0])) ? parts[0] : defaultH;
+    const m = (parts.length >= 2 && !isNaN(parts[1])) ? parts[1] : defaultM;
+    return h * 60 + m;
+  }
   let knownFaces    = [];
   let todayLogs     = [];
   let scanInterval  = null;
@@ -672,8 +733,15 @@
         currentLng = pos.coords.longitude;
         try {
           const config = await fetch(API_URL + '?action=getConfig').then(r => r.json());
-          if (config.workStartTime) workStartTime = config.workStartTime;
-          if (config.otStartTime)   otStartTime   = config.otStartTime;
+          if (config.workStartTime) {
+            workStartTime = parseWorkStartTime(config.workStartTime);
+            localStorage.setItem('work_start_time', workStartTime);
+          }
+          if (config.otStartTime) {
+            otStartTime = parseOtStartTime(config.otStartTime);
+            localStorage.setItem('ot_start_time', otStartTime);
+          }
+          updateScheduleHint();
 
           if (!config.lat || !config.lng || config.radius == 0) {
             gpsStatus.innerHTML = '<span style="color:#34d399">📍 GPS: ไม่จำกัดพื้นที่</span>';
@@ -706,13 +774,26 @@
     return false;
   }
 
-  // 5. ขนานที่ 4: ดึงข้อมูลพนักงานล่าสุดใน Background มาอัปเดตแคช
+  // 5. ขนานที่ 4: ดึงข้อมูลพนักงานล่าสุดและเวลาเริ่มงาน/OT จาก Setting ใน Background มาอัปเดตแคช
   async function syncDataBackground() {
     try {
-      const [usersRes, attRes] = await Promise.all([
+      const [usersRes, attRes, configRes] = await Promise.all([
         fetch(API_URL + '?action=getKnownFaces').then(r => r.json()).catch(() => []),
-        fetch(API_URL + '?action=getAttendance').then(r => r.json()).catch(() => [])
+        fetch(API_URL + '?action=getAttendance').then(r => r.json()).catch(() => []),
+        fetch(API_URL + '?action=getConfig').then(r => r.json()).catch(() => null)
       ]);
+
+      if (configRes) {
+        if (configRes.workStartTime) {
+          workStartTime = parseWorkStartTime(configRes.workStartTime);
+          localStorage.setItem('work_start_time', workStartTime);
+        }
+        if (configRes.otStartTime) {
+          otStartTime = parseOtStartTime(configRes.otStartTime);
+          localStorage.setItem('ot_start_time', otStartTime);
+        }
+        updateScheduleHint();
+      }
 
       if (Array.isArray(usersRes) && usersRes.length > 0) {
         localStorage.setItem('cached_known_faces', JSON.stringify(usersRes));
@@ -796,7 +877,7 @@
     }, 200);
   }
 
-  function updateDailyCard(targetEmp) {
+  function updateDailyCard(targetEmp, customLogs = null) {
     if (!targetEmp) return;
     const now = new Date();
     const d = String(now.getDate()).padStart(2, '0');
@@ -811,7 +892,8 @@
     if (userSubEl) userSubEl.innerText = `ID: ${targetEmp.employeeId || 'EMP'} · แผนก ${targetEmp.department || 'ทั่วไป'}`;
 
     // กรองเฉพาะประวัติการลงเวลาของพนักงานคนนี้ในวันนี้เท่านั้น
-    const empLogs = todayLogs.filter(log =>
+    const logsPool = customLogs || todayLogs;
+    const empLogs = logsPool.filter(log =>
       (targetEmp.employeeId && log.employeeId === targetEmp.employeeId) ||
       log.name === targetEmp.name
     );
@@ -823,24 +905,17 @@
 
     if (checkIn && checkIn.time) {
       inTimeEl.innerText = checkIn.time + ' น.';
-      const [limitH, limitM] = (workStartTime || '08:30').split(':').map(Number);
-      const limitTotalMin = (limitH || 8) * 60 + (limitM || 30);
-      const timeParts = checkIn.time.split(':').map(Number);
-      const inTotalMin = timeParts.length >= 2 ? timeParts[0] * 60 + timeParts[1] : null;
+      const limitTotalMin = timeStringToMinutes(workStartTime, 8, 0);
+      const inTotalMin = timeStringToMinutes(checkIn.time, 8, 0);
 
-      if (inTotalMin !== null) {
-        if (inTotalMin <= limitTotalMin) {
-          const diff = limitTotalMin - inTotalMin;
-          inStatusEl.innerText = diff > 0 ? `✅ ปกติ (ก่อนเวลา ${diff} นาที)` : `✅ ปกติ (ตรงเวลา)`;
-          inStatusEl.className = 'daily-item-status status-good';
-        } else {
-          const lateDiff = inTotalMin - limitTotalMin;
-          inStatusEl.innerText = `⚠️ สาย ${lateDiff} นาที`;
-          inStatusEl.className = 'daily-item-status status-late';
-        }
-      } else {
-        inStatusEl.innerText = checkIn.status || 'ปกติ';
+      if (inTotalMin <= limitTotalMin) {
+        const diff = limitTotalMin - inTotalMin;
+        inStatusEl.innerText = diff > 0 ? `✅ ปกติ (ก่อนเวลา ${diff} นาที)` : `✅ ปกติ (ตรงเวลา)`;
         inStatusEl.className = 'daily-item-status status-good';
+      } else {
+        const lateDiff = inTotalMin - limitTotalMin;
+        inStatusEl.innerText = `⚠️ สาย ${lateDiff} นาที`;
+        inStatusEl.className = 'daily-item-status status-late';
       }
     } else {
       inTimeEl.innerText = '--:--:--';
@@ -852,42 +927,47 @@
     const checkOut = empLogs.find(l => (l.type || '').includes('ออกงาน') || (l.type || '').includes('Check-Out')) || (empLogs.length > 1 ? empLogs[empLogs.length - 1] : null);
     const outTimeEl = document.getElementById('dailyOutTime');
     const outStatusEl = document.getElementById('dailyOutStatus');
+    const outItemEl = document.getElementById('dailyOutItem');
 
     if (checkOut && checkOut.time && checkOut !== checkIn) {
       outTimeEl.innerText = checkOut.time + ' น.';
-      const [otH, otM] = (otStartTime || '17:00').split(':').map(Number);
-      const otLimitTotalMin = (otH || 17) * 60 + (otM || 0);
-      const timeParts = checkOut.time.split(':').map(Number);
-      const outTotalMin = timeParts.length >= 2 ? timeParts[0] * 60 + timeParts[1] : null;
+      const otLimitTotalMin = timeStringToMinutes(otStartTime, 17, 0);
+      const outTotalMin = timeStringToMinutes(checkOut.time, 17, 0);
 
-      if (outTotalMin !== null) {
-        if (outTotalMin > otLimitTotalMin) {
-          const otDiffMin = outTotalMin - otLimitTotalMin;
-          const fullOtHours = Math.floor(otDiffMin / 60);
-          if (fullOtHours >= 1) {
-            outStatusEl.innerText = `⏱️ OT: ${fullOtHours} ชั่วโมงเต็ม`;
-            outStatusEl.className = 'daily-item-status status-ot';
-          } else {
-            outStatusEl.innerText = `✅ ปกติ (เกิน 17:00 น. แต่ OT ยังไม่ครบ 1 ชม.)`;
-            outStatusEl.className = 'daily-item-status status-normal';
-          }
+      if (outTotalMin < otLimitTotalMin) {
+        // ออกก่อนเวลาที่กำหนด -> แจ้งเตือนสีเหลือง ผิดปกติ
+        const earlyDiff = otLimitTotalMin - outTotalMin;
+        outStatusEl.innerText = `⚠️ ออกก่อนเวลา (${earlyDiff} นาที)`;
+        outStatusEl.className = 'daily-item-status status-early';
+        if (outItemEl) outItemEl.className = 'daily-item out-item early-item';
+      } else if (outTotalMin > otLimitTotalMin) {
+        const otDiffMin = outTotalMin - otLimitTotalMin;
+        const fullOtHours = Math.floor(otDiffMin / 60);
+        if (fullOtHours >= 1) {
+          outStatusEl.innerText = `⏱️ OT: ${fullOtHours} ชั่วโมงเต็ม`;
+          outStatusEl.className = 'daily-item-status status-ot';
+          if (outItemEl) outItemEl.className = 'daily-item out-item';
         } else {
-          outStatusEl.innerText = `✅ ปกติ (ออกงานตรงเวลา)`;
-          outStatusEl.className = 'daily-item-status status-normal';
+          outStatusEl.innerText = `✅ ปกติ (เกินเวลาแต่ OT ไม่ถึง 1 ชม.)`;
+          outStatusEl.className = 'daily-item-status status-good';
+          if (outItemEl) outItemEl.className = 'daily-item out-item';
         }
       } else {
-        outStatusEl.innerText = checkOut.status || 'ปกติ';
-        outStatusEl.className = 'daily-item-status status-normal';
+        outStatusEl.innerText = `✅ ปกติ (ออกงานตรงเวลา)`;
+        outStatusEl.className = 'daily-item-status status-good';
+        if (outItemEl) outItemEl.className = 'daily-item out-item';
       }
     } else {
       outTimeEl.innerText = '--:--:--';
       outStatusEl.innerText = '- รอลงเวลาออกงาน -';
       outStatusEl.className = 'daily-item-status status-pending';
+      if (outItemEl) outItemEl.className = 'daily-item out-item';
     }
   }
 
   function init() {
     initCachedFaces();
+    updateScheduleHint();
 
     try {
       const local = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
@@ -982,8 +1062,7 @@
       typeBadge.innerText = '🟢 เข้างาน (ครั้งที่ 1 ของวัน)';
       typeBadge.className = 'detected-type type-in-badge';
 
-      const [limitH, limitM] = (workStartTime || '08:30').split(':').map(Number);
-      const limitTotalMin = (limitH || 8) * 60 + (limitM || 30);
+      const limitTotalMin = timeStringToMinutes(workStartTime, 8, 0);
 
       if (currentTotalMin > limitTotalMin) {
         const diff = currentTotalMin - limitTotalMin;
@@ -1002,10 +1081,16 @@
       typeBadge.innerText = '🔴 ออกงาน (ครั้งที่ ' + (employeeScansToday.length + 1) + ' ของวัน)';
       typeBadge.className = 'detected-type type-out-badge';
 
-      const [otH, otM] = (otStartTime || '17:00').split(':').map(Number);
-      const otStartTotalMin = (otH || 17) * 60 + (otM || 0);
+      const otStartTotalMin = timeStringToMinutes(otStartTime, 17, 0);
 
-      if (currentTotalMin > otStartTotalMin) {
+      if (currentTotalMin < otStartTotalMin) {
+        // ออกก่อนเวลาที่กำหนด -> แจ้งเตือนสีเหลือง ผิดปกติ
+        const earlyDiff = otStartTotalMin - currentTotalMin;
+        resolvedStatus = 'ออกก่อนกำหนด (' + earlyDiff + ' นาที)';
+        statusBadge.innerText = '⚠️ ' + resolvedStatus;
+        statusBadge.style.color = '#fbbf24';
+        resolvedOtHours = 0;
+      } else if (currentTotalMin > otStartTotalMin) {
         const otDiffMinutes = currentTotalMin - otStartTotalMin;
         const fullOtHours = Math.floor(otDiffMinutes / 60);
 
@@ -1014,17 +1099,20 @@
           resolvedStatus = 'เลิกงาน + OT ' + fullOtHours + ' ชม.';
           otBadge.innerText = '⏱️ OT: ' + fullOtHours + ' ชั่วโมงเต็ม';
           otBadge.style.display = 'inline-block';
+          statusBadge.innerText = resolvedStatus;
+          statusBadge.style.color = '#38bdf8';
         } else {
           resolvedOtHours = 0;
           resolvedStatus = 'ออกงานปกติ (OT ยังไม่ครบ 1 ชม.)';
+          statusBadge.innerText = resolvedStatus;
+          statusBadge.style.color = '#34d399';
         }
       } else {
         resolvedOtHours = 0;
         resolvedStatus = 'ออกงานปกติ';
+        statusBadge.innerText = resolvedStatus;
+        statusBadge.style.color = '#34d399';
       }
-
-      statusBadge.innerText = resolvedStatus;
-      statusBadge.style.color = '#38bdf8';
     }
 
     confirmModal.style.display = 'flex';

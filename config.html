@@ -231,7 +231,7 @@
       <div class="form-grid">
         <div>
           <label>เวลาเริ่มงานตอนเช้า</label>
-          <input type="time" id="workStartTime" value="08:30">
+          <input type="time" id="workStartTime" value="08:00">
           <p class="note">สแกนหลังเวลานี้ = สาย</p>
         </div>
         <div>
@@ -346,6 +346,27 @@
     }
   };
 
+  function parseWorkStartTime(val) {
+    if (!val) return '08:00';
+    const s = String(val).replace(/'/g, '').trim();
+    const m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) return m[1].padStart(2, '0') + ':' + m[2];
+    return '08:00';
+  }
+
+  function parseOtStartTime(val) {
+    if (!val) return '17:00';
+    const s = String(val).replace(/'/g, '').trim();
+    const m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) {
+      let h = parseInt(m[1], 10);
+      const min = m[2];
+      if (h >= 1 && h <= 6) h += 12;
+      return String(h).padStart(2, '0') + ':' + min;
+    }
+    return '17:00';
+  }
+
   function loadGpsConfig(apiUrl) {
     fetch(apiUrl + '?action=getConfig')
       .then(r => r.json())
@@ -353,8 +374,8 @@
         if (config.lat !== undefined) document.getElementById('lat').value = config.lat;
         if (config.lng !== undefined) document.getElementById('lng').value = config.lng;
         if (config.radius !== undefined) document.getElementById('radius').value = config.radius;
-        if (config.workStartTime) document.getElementById('workStartTime').value = config.workStartTime;
-        if (config.otStartTime)   document.getElementById('otStartTime').value   = config.otStartTime;
+        if (config.workStartTime) document.getElementById('workStartTime').value = parseWorkStartTime(config.workStartTime);
+        if (config.otStartTime)   document.getElementById('otStartTime').value   = parseOtStartTime(config.otStartTime);
         if (config.adminPin) {
           currentAdminPin = config.adminPin;
           document.getElementById('adminPinInput').value = config.adminPin;
