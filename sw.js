@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V6 - 31-Day Individual Sheet Timesheet)
-const CACHE_NAME = 'attendance-pwa-v6';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V7 - Perfect 1-Page A4 Timesheet Print)
+const CACHE_NAME = 'attendance-pwa-v7';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที

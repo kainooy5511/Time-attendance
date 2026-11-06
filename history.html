@@ -201,6 +201,10 @@
       background: linear-gradient(135deg, #4f46e5, #4338ca);
       box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
     }
+    .btn-print {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+    }
     .btn-raw {
       background: linear-gradient(135deg, #059669, #047857);
       box-shadow: 0 4px 15px rgba(5, 150, 105, 0.35);
@@ -208,6 +212,247 @@
     .btn-refresh {
       padding: 12px 18px; border-radius: 14px; background: #64748b;
       color: white; font-family: inherit; font-weight: 600; border: none; cursor: pointer;
+    }
+
+    /* Print Modal & A4 Exact Fit Styles */
+    .print-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .print-toolbar {
+      width: 100%;
+      max-width: 210mm;
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 10px 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-print-action {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white; border: none; padding: 9px 18px; border-radius: 10px;
+      font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 10px rgba(2,132,199,0.4);
+    }
+    .btn-close-action {
+      background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 9px 15px;
+      border-radius: 10px; font-weight: 600; font-size: 13.5px; cursor: pointer; font-family: inherit;
+    }
+    .print-preview-scroll {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 30px;
+    }
+    .print-a4-page {
+      width: 210mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 8mm 10mm 8mm 10mm;
+      box-sizing: border-box;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 10px;
+      line-height: 1.3;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* A4 Header */
+    .a4-header {
+      margin-bottom: 4px;
+    }
+    .a4-title-row {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+    .a4-main-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 0.3px;
+    }
+    .a4-sub-title {
+      font-size: 9.5px;
+      color: #64748b;
+      margin-top: 1px;
+    }
+    .a4-info-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #cbd5e1;
+      font-size: 9.8px;
+      background: #f8fafc;
+    }
+    .a4-info-table td {
+      padding: 2.5px 6px;
+      border: 1px solid #cbd5e1;
+    }
+    .a4-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      background: #e0e7ff;
+      color: #4338ca;
+      font-weight: 700;
+      border-radius: 4px;
+    }
+
+    /* A4 Timesheet Table */
+    .a4-timesheet-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+      font-size: 9.5px;
+    }
+    .a4-timesheet-table th {
+      background: #f1f5f9;
+      color: #0f172a;
+      border: 1px solid #94a3b8;
+      padding: 3px 2px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .a4-timesheet-table td {
+      border: 1px solid #cbd5e1;
+      padding: 2px 3px;
+      text-align: center;
+      height: 5.2mm;
+      max-height: 5.2mm;
+    }
+    .a4-timesheet-table tr.weekend-row {
+      background: #f8fafc;
+      color: #64748b;
+    }
+    .a4-timesheet-table tr.late-row td:nth-child(5) {
+      color: #c2410c;
+      font-weight: 700;
+    }
+    .a4-timesheet-table tr.ot-row td:nth-child(6) {
+      color: #0369a1;
+      font-weight: 700;
+    }
+
+    /* A4 Footer Summary & Signatures */
+    .a4-footer {
+      margin-top: 4px;
+    }
+    .a4-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .a4-summary-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 3px 6px;
+      text-align: center;
+      background: #f8fafc;
+    }
+    .a4-sum-label {
+      font-size: 8.8px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .a4-sum-val {
+      font-size: 11px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .a4-signatures-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding-top: 4px;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .a4-sign-box {
+      text-align: center;
+      font-size: 9px;
+    }
+    .a4-sign-role {
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 12px;
+    }
+    .a4-sign-line {
+      color: #475569;
+      margin-bottom: 2px;
+    }
+    .a4-sign-name {
+      color: #64748b;
+      font-size: 8.5px;
+      margin-bottom: 1px;
+    }
+    .a4-sign-date {
+      color: #64748b;
+      font-size: 8px;
+    }
+
+    /* Print @media */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 6mm 8mm 6mm 8mm;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .no-print, .bottom-dock, .top-bar, .admin-controls, .stats-row, .history-list, .pin-gate, .header, .print-toolbar {
+        display: none !important;
+      }
+      .print-modal-overlay {
+        position: static !important;
+        background: transparent !important;
+        padding: 0 !important;
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      .print-preview-scroll {
+        overflow: visible !important;
+        padding: 0 !important;
+        display: block !important;
+      }
+      .print-a4-page {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: auto !important;
+        height: auto !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
     }
 
     /* KPI Cards */
@@ -309,11 +554,14 @@
         </select>
       </div>
       <div class="btn-row">
+        <button class="btn-excel btn-print" onclick="openPrintTimesheetModal()">
+          🖨️ พิมพ์ใบลงเวลา A4 (Print / บันทึก PDF)
+        </button>
         <button class="btn-excel btn-timesheet" onclick="exportTimesheetReport()">
-          📊 Export รายงานเวลาทำงาน (แบบฟอร์มเซ็นอนุมัติ)
+          📊 Export Excel (.xlsx)
         </button>
         <button class="btn-excel btn-raw" onclick="exportToExcel()">
-          📑 Export บันทึกสแกนทั้งหมด (.xlsx)
+          📑 Export บันทึกดิบ (.xlsx)
         </button>
         <button class="btn-refresh" onclick="loadAttendance()">
           🔄 รีเฟรช
@@ -324,8 +572,11 @@
     <!-- Employee Controls (Only visible to Employee) -->
     <div id="employeePanel" class="admin-controls" style="display:none;">
       <div class="btn-row">
+        <button class="btn-excel btn-print" onclick="openPrintTimesheetModal()">
+          🖨️ พิมพ์ใบลงเวลาของฉัน A4 (Print / บันทึก PDF)
+        </button>
         <button class="btn-excel btn-timesheet" onclick="exportTimesheetReport()">
-          📊 Export ใบบันทึกเวลาของฉัน (แบบฟอร์มเซ็นอนุมัติ)
+          📊 Export Excel (.xlsx)
         </button>
         <button class="btn-refresh" onclick="loadAttendance()">
           🔄 รีเฟรช
@@ -874,6 +1125,19 @@
         { wch: 26 }  // ลายเซ็นผู้อนุมัติ
       ];
 
+      ws['!pageSetup'] = {
+        orientation: 'portrait',
+        paperSize: 9, // A4
+        fitToWidth: 1,
+        fitToHeight: 1
+      };
+      ws['!margins'] = {
+        left: 0.3,
+        right: 0.3,
+        top: 0.4,
+        bottom: 0.4
+      };
+
       // กำหนดชื่อ Sheet ประจำแต่ละบุคคล ไม่ให้ทับกัน (สูงสุด 31 ตัวอักษร)
       let rawSheetName = `${emp.employeeId || 'EMP'}_${emp.name || 'Staff'}`.replace(/[\\/?*[\]:]/g, '_').slice(0, 28);
       let sheetName = rawSheetName;
@@ -890,6 +1154,281 @@
       ? `ใบบันทึกเวลา_${targetEmployees[0].name}_รอบเดือน${thaiMonthNames[m] || m}_${y}`
       : `รายงานเวลาพนักงานทุกคน_รอบเดือน${thaiMonthNames[m] || m}_${y}`;
     XLSX.writeFile(wb, `${fileNamePrefix}.xlsx`);
+  }
+
+  // --- ระบบพิมพ์ใบลงเวลา A4 พอดี 1 หน้ากระดาษเต็ม (Print & PDF) ---
+  let printEmployeesList = [];
+  let printSelectedEmpId = '';
+
+  function openPrintTimesheetModal() {
+    if (!currentFiltered || currentFiltered.length === 0) {
+      return alert('ไม่มีข้อมูลสำหรับพิมพ์รายงาน');
+    }
+
+    if (currentLoggedInUser && currentLoggedInUser.role !== 'Admin') {
+      printEmployeesList = [{
+        employeeId: currentLoggedInUser.employeeId || 'EMP',
+        name: currentLoggedInUser.name || 'พนักงาน',
+        department: currentLoggedInUser.department || 'ทั่วไป'
+      }];
+    } else {
+      const selectedEmp = document.getElementById('empFilter').value;
+      if (selectedEmp) {
+        const empRec = currentFiltered.find(r => r.name === selectedEmp);
+        printEmployeesList = [{
+          employeeId: (empRec && empRec.employeeId) || 'EMP',
+          name: selectedEmp,
+          department: (empRec && empRec.department) || 'ทั่วไป'
+        }];
+      } else {
+        const empMap = new Map();
+        currentFiltered.forEach(r => {
+          const key = r.name || r.employeeId;
+          if (key && !empMap.has(key)) {
+            empMap.set(key, {
+              employeeId: r.employeeId || '-',
+              name: r.name || '-',
+              department: r.department || 'ทั่วไป'
+            });
+          }
+        });
+        printEmployeesList = Array.from(empMap.values());
+      }
+    }
+
+    if (printEmployeesList.length === 0) {
+      return alert('ไม่พบรายชื่อพนักงานสำหรับพิมพ์รายงาน');
+    }
+
+    const sel = document.getElementById('printEmpSelect');
+    sel.innerHTML = printEmployeesList.map(e => `<option value="${e.employeeId}">${e.name} (${e.employeeId})</option>`).join('');
+    printSelectedEmpId = printEmployeesList[0].employeeId;
+
+    renderPrintA4();
+    document.getElementById('printModal').style.display = 'flex';
+  }
+
+  function closePrintModal() {
+    document.getElementById('printModal').style.display = 'none';
+  }
+
+  function triggerBrowserPrint() {
+    window.print();
+  }
+
+  function renderPrintA4() {
+    const sel = document.getElementById('printEmpSelect');
+    if (sel && sel.value) printSelectedEmpId = sel.value;
+
+    const emp = printEmployeesList.find(e => e.employeeId === printSelectedEmpId) || printEmployeesList[0];
+    if (!emp) return;
+
+    let targetMonthStr = '';
+    const monthSelectEl = document.getElementById('monthFilter');
+    if (monthSelectEl && monthSelectEl.value) {
+      targetMonthStr = monthSelectEl.value;
+    } else {
+      for (const r of currentFiltered) {
+        if (r.date) {
+          const parts = String(r.date).replace(/'/g, '').split('/');
+          if (parts.length >= 3) {
+            targetMonthStr = parts[1] + '/' + parts[2];
+            break;
+          }
+        }
+      }
+    }
+
+    let [m, y] = (targetMonthStr || '').split('/').map(Number);
+    if (!m || isNaN(m) || !y || isNaN(y)) {
+      const now = new Date();
+      m = now.getMonth() + 1;
+      y = now.getFullYear();
+    }
+    const yThai = y + 543;
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const thaiDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
+    let rowsHtml = '';
+    let totalWorkDays = 0;
+    let totalLateCount = 0;
+    let totalOtHours = 0;
+    let totalMonthDays = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateObj = new Date(y, m - 1, day);
+      const dayOfWeek = thaiDays[dateObj.getDay()];
+      const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
+      if (!isWeekend) totalMonthDays++;
+
+      const empLogs = currentFiltered.filter(r => {
+        const matchesEmp = (r.employeeId && r.employeeId === emp.employeeId) || r.name === emp.name;
+        if (!matchesEmp) return false;
+        const parts = String(r.date || '').replace(/'/g, '').split('/');
+        if (parts.length >= 3) {
+          return parseInt(parts[0], 10) === day && parseInt(parts[1], 10) === m && parseInt(parts[2], 10) === y;
+        }
+        return false;
+      });
+
+      const checkIn = empLogs.find(r => (r.type || '').includes('เข้า') || (r.type || '').includes('In'));
+      const checkOut = empLogs.slice().reverse().find(r => (r.type || '').includes('ออก') || (r.type || '').includes('Out'));
+
+      let timeIn = checkIn ? formatDisplayTime(checkIn.time) : '-';
+      let timeOut = checkOut ? formatDisplayTime(checkOut.time) : '-';
+      let status = '-';
+      let ot = (checkOut && checkOut.otHours) ? parseFloat(checkOut.otHours) || 0 : 0;
+      let rowClass = isWeekend ? 'weekend-row' : '';
+
+      if (checkIn || checkOut) {
+        totalWorkDays++;
+        let statusParts = [];
+        if (checkIn && checkIn.status && checkIn.status !== 'ปกติ' && checkIn.status !== 'ตรงเวลา') {
+          statusParts.push(checkIn.status);
+          if (checkIn.status.includes('สาย')) {
+            totalLateCount++;
+            rowClass += ' late-row';
+          }
+        }
+        if (checkOut && checkOut.status && checkOut.status !== 'ออกงานปกติ' && checkOut.status !== 'ปกติ') {
+          statusParts.push(checkOut.status);
+        }
+
+        if (statusParts.length > 0) {
+          status = statusParts.join(' / ');
+        } else if (checkIn && !checkOut) {
+          status = (checkIn.status || 'เข้างานปกติ') + ' (ยังไม่ลงเวลาออก)';
+        } else if (!checkIn && checkOut) {
+          status = (checkOut.status || 'ออกงานปกติ') + ' (ขาดลงเวลาเข้า)';
+        } else {
+          status = 'ปกติ (ตรงเวลา)';
+        }
+        totalOtHours += ot;
+        if (ot > 0) rowClass += ' ot-row';
+      } else {
+        if (isWeekend) {
+          status = `วันหยุด (${dayOfWeek})`;
+        } else {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (dateObj <= today) {
+            status = 'ขาดลงเวลา / ลา';
+          } else {
+            status = '-';
+          }
+        }
+      }
+
+      const dateDisplay = `${String(day).padStart(2, '0')}/${String(m).padStart(2, '0')}/${yThai}`;
+
+      rowsHtml += `
+        <tr class="${rowClass}">
+          <td><strong>${dateDisplay}</strong></td>
+          <td>${dayOfWeek}</td>
+          <td>${timeIn}</td>
+          <td>${timeOut}</td>
+          <td style="text-align:left; padding-left:6px;">${status}</td>
+          <td>${ot > 0 ? ot : '0'}</td>
+          <td style="color:#94a3b8; font-size:8px;">..................</td>
+          <td style="color:#94a3b8; font-size:8px;">..................</td>
+        </tr>
+      `;
+    }
+
+    const todayDate = new Date();
+    const todayDisplay = `${String(todayDate.getDate()).padStart(2, '0')}/${String(todayDate.getMonth()+1).padStart(2, '0')}/${todayDate.getFullYear() + 543}`;
+    const companyTitle = localStorage.getItem('company_name') || 'ระบบบันทึกเวลาปฏิบัติงาน';
+
+    const sheetEl = document.getElementById('printA4Sheet');
+    sheetEl.innerHTML = `
+      <div class="a4-header">
+        <div class="a4-title-row">
+          <div class="a4-main-title">แบบฟอร์มบันทึกเวลาทำงานรายบุคคล (Monthly Employee Timesheet)</div>
+          <div class="a4-sub-title">${companyTitle} · ระบบบันทึกเวลาปฏิบัติงานด้วยการสแกนใบหน้าและ GPS Geofencing</div>
+        </div>
+
+        <table class="a4-info-table">
+          <tr>
+            <td style="width: 14%;"><strong>รอบประจำเดือน:</strong></td>
+            <td style="width: 36%; font-weight:600;">${thaiMonthNames[m]} ${yThai} (วันที่ 1 - ${daysInMonth})</td>
+            <td style="width: 15%;"><strong>วันที่พิมพ์รายงาน:</strong></td>
+            <td style="width: 35%;">${todayDisplay}</td>
+          </tr>
+          <tr>
+            <td><strong>รหัสพนักงาน:</strong></td>
+            <td><span class="a4-badge">${emp.employeeId}</span></td>
+            <td><strong>ชื่อ-นามสกุล:</strong></td>
+            <td><strong style="font-size:11px; color:#0f172a;">${emp.name}</strong></td>
+          </tr>
+          <tr>
+            <td><strong>แผนก / ฝ่าย:</strong></td>
+            <td>${emp.department || 'ทั่วไป'}</td>
+            <td><strong>สถานะการจ้าง:</strong></td>
+            <td><span style="color:#059669; font-weight:700;">● ปฏิบัติงานปกติ (Active)</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <table class="a4-timesheet-table">
+        <thead>
+          <tr>
+            <th style="width: 11%;">วันที่</th>
+            <th style="width: 10%;">วัน</th>
+            <th style="width: 12%;">เวลาเข้า (In)</th>
+            <th style="width: 12%;">เวลาออก (Out)</th>
+            <th style="width: 27%;">สถานะการลงเวลา (Attendance Status)</th>
+            <th style="width: 8%;">OT (ชม.)</th>
+            <th style="width: 10%;">ลายเซ็นพนักงาน</th>
+            <th style="width: 10%;">ลายเซ็นผู้อนุมัติ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+
+      <div class="a4-footer">
+        <div class="a4-summary-grid">
+          <div class="a4-summary-card">
+            <div class="a4-sum-label">วันทำงานในรอบเดือน</div>
+            <div class="a4-sum-val">${totalMonthDays} วัน</div>
+          </div>
+          <div class="a4-summary-card">
+            <div class="a4-sum-label">วันลงเวลาทำงานจริง</div>
+            <div class="a4-sum-val" style="color:#059669;">${totalWorkDays} วัน</div>
+          </div>
+          <div class="a4-summary-card">
+            <div class="a4-sum-label">มาสายรวม</div>
+            <div class="a4-sum-val" style="color:${totalLateCount > 0 ? '#ea580c' : '#059669'};">${totalLateCount} ครั้ง</div>
+          </div>
+          <div class="a4-summary-card">
+            <div class="a4-sum-label">ชั่วโมง OT รวม</div>
+            <div class="a4-sum-val" style="color:#0284c7;">${totalOtHours} ชม.</div>
+          </div>
+        </div>
+
+        <div class="a4-signatures-row">
+          <div class="a4-sign-box">
+            <div class="a4-sign-role">(1) พนักงานผู้ลงเวลา</div>
+            <div class="a4-sign-line">ลงชื่อ ....................................................</div>
+            <div class="a4-sign-name">(${emp.name})</div>
+            <div class="a4-sign-date">วันที่ ..... / ..... / .........</div>
+          </div>
+          <div class="a4-sign-box">
+            <div class="a4-sign-role">(2) ผู้ตรวจสอบฝ่ายบุคคล (HR)</div>
+            <div class="a4-sign-line">ลงชื่อ ....................................................</div>
+            <div class="a4-sign-name">( .................................................... )</div>
+            <div class="a4-sign-date">วันที่ ..... / ..... / .........</div>
+          </div>
+          <div class="a4-sign-box">
+            <div class="a4-sign-role">(3) ผู้จัดการ / ผู้อนุมัติ (Manager)</div>
+            <div class="a4-sign-line">ลงชื่อ ....................................................</div>
+            <div class="a4-sign-name">( .................................................... )</div>
+            <div class="a4-sign-date">วันที่ ..... / ..... / .........</div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   window.addEventListener('load', () => {
@@ -923,6 +1462,30 @@
     <span>ตั้งค่า</span>
   </a>
 </nav>
+
+<!-- Print Preview Modal (A4 High Precision Fit) -->
+<div id="printModal" class="print-modal-overlay" style="display:none;">
+  <div class="print-toolbar no-print">
+    <div class="toolbar-left">
+      <span style="font-weight:700; font-size:14px; color:#0f172a;">🖨️ พิมพ์ใบลงเวลา A4 (พอดี 1 หน้าเต็ม)</span>
+      <select id="printEmpSelect" onchange="renderPrintA4()" style="margin:0; padding:6px 10px; font-size:13px; max-width:220px; border-radius:8px; border:1px solid #cbd5e1;"></select>
+    </div>
+    <div class="toolbar-right">
+      <button class="btn-print-action" onclick="triggerBrowserPrint()">
+        🖨️ สั่งพิมพ์ / บันทึกเป็น PDF
+      </button>
+      <button class="btn-close-action" onclick="closePrintModal()">
+        ✕ ปิดหน้าต่าง
+      </button>
+    </div>
+  </div>
+
+  <div class="print-preview-scroll">
+    <div id="printA4Sheet" class="print-a4-page">
+      <!-- Dynamic A4 Timesheet Content injected here -->
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
