@@ -189,16 +189,24 @@
     .filter-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
     }
-    .btn-row { display: flex; gap: 10px; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
     .btn-excel {
-      flex: 1; padding: 12px; border-radius: 14px;
-      background: linear-gradient(135deg, #10b981, #059669); color: white;
-      font-family: inherit; font-size: 0.95em; font-weight: 600; border: none;
+      flex: 1; min-width: 180px; padding: 12px 14px; border-radius: 14px;
+      color: white; font-family: inherit; font-size: 0.9em; font-weight: 600; border: none;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
-      gap: 8px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      gap: 6px; transition: transform 0.15s;
+    }
+    .btn-excel:active { transform: scale(0.97); }
+    .btn-timesheet {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
+    }
+    .btn-raw {
+      background: linear-gradient(135deg, #059669, #047857);
+      box-shadow: 0 4px 15px rgba(5, 150, 105, 0.35);
     }
     .btn-refresh {
-      padding: 12px 18px; border-radius: 14px; background: var(--accent);
+      padding: 12px 18px; border-radius: 14px; background: #64748b;
       color: white; font-family: inherit; font-weight: 600; border: none; cursor: pointer;
     }
 
@@ -301,8 +309,23 @@
         </select>
       </div>
       <div class="btn-row">
-        <button class="btn-excel" onclick="exportToExcel()">
-          📥 ส่งออกรายงาน Excel (.xlsx)
+        <button class="btn-excel btn-timesheet" onclick="exportTimesheetReport()">
+          📊 Export รายงานเวลาทำงาน (แบบฟอร์มเซ็นอนุมัติ)
+        </button>
+        <button class="btn-excel btn-raw" onclick="exportToExcel()">
+          📑 Export บันทึกสแกนทั้งหมด (.xlsx)
+        </button>
+        <button class="btn-refresh" onclick="loadAttendance()">
+          🔄 รีเฟรช
+        </button>
+      </div>
+    </div>
+
+    <!-- Employee Controls (Only visible to Employee) -->
+    <div id="employeePanel" class="admin-controls" style="display:none;">
+      <div class="btn-row">
+        <button class="btn-excel btn-timesheet" onclick="exportTimesheetReport()">
+          📊 Export ใบบันทึกเวลาของฉัน (แบบฟอร์มเซ็นอนุมัติ)
         </button>
         <button class="btn-refresh" onclick="loadAttendance()">
           🔄 รีเฟรช
@@ -435,11 +458,15 @@
       document.getElementById('viewTitle').innerText = '📊 รายงานการลงเวลาและสรุปผล';
       document.getElementById('viewSubtitle').innerText = 'ตรวจสอบพนักงานทุกคน กรองตามเดือน และดาวน์โหลดไฟล์ Excel';
       document.getElementById('adminPanel').style.display = 'block';
+      const empPanel = document.getElementById('employeePanel');
+      if (empPanel) empPanel.style.display = 'none';
     } else {
       document.getElementById('currentRoleBadge').innerText = `👤 ${currentLoggedInUser.name} (${currentLoggedInUser.employeeId || 'Staff'})`;
       document.getElementById('viewTitle').innerText = '📋 ประวัติการลงเวลาของฉัน';
-      document.getElementById('viewSubtitle').innerText = 'แสดงรายการตอกบัตรเข้า-ออกงาน และชั่วโมง OT ของคุณ';
+      document.getElementById('viewSubtitle').innerText = 'แสดงรายการตอกบัตรเข้า-ออกงาน และดาวน์โหลดใบบันทึกเวลาเซ็นอนุมัติ';
       document.getElementById('adminPanel').style.display = 'none';
+      const empPanel = document.getElementById('employeePanel');
+      if (empPanel) empPanel.style.display = 'block';
     }
 
     loadAttendance();
@@ -650,7 +677,138 @@
     ws['!cols'] = colWidths;
 
     const dateStr = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `รายงานลงเวลา_${dateStr}.xlsx`);
+    XLSX.writeFile(wb, `ประวัติการสแกนละเอียด_${dateStr}.xlsx`);
+  }
+
+  function parseDateForSort(dStr) {
+    if (!dStr) return 0;
+    const s = String(dStr).replace(/'/g, '').trim();
+    const parts = s.split('/');
+    if (parts.length >= 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      return new Date(year, month, day).getTime();
+    }
+    return new Date(s).getTime() || 0;
+  }
+
+  function generateTimesheetData(records) {
+    const dayMap = new Map();
+
+    records.forEach(r => {
+      const normDate = String(r.date || '').replace(/'/g, '').trim();
+      const empKey = (r.employeeId || r.name || 'EMP') + '___' + normDate;
+      if (!dayMap.has(empKey)) {
+        dayMap.set(empKey, {
+          date: normDate,
+          employeeId: r.employeeId || '-',
+          name: r.name || '-',
+          department: r.department || 'ทั่วไป',
+          checkIns: [],
+          checkOuts: []
+        });
+      }
+      const dayObj = dayMap.get(empKey);
+      const typeStr = (r.type || '').toLowerCase();
+      if (typeStr.includes('เข้า') || typeStr.includes('in')) {
+        dayObj.checkIns.push(r);
+      } else if (typeStr.includes('ออก') || typeStr.includes('out')) {
+        dayObj.checkOuts.push(r);
+      } else {
+        dayObj.checkIns.push(r);
+      }
+    });
+
+    const dayList = Array.from(dayMap.values());
+    dayList.sort((a, b) => {
+      const tA = parseDateForSort(a.date);
+      const tB = parseDateForSort(b.date);
+      if (tA !== tB) return tA - tB;
+      return String(a.name).localeCompare(String(b.name));
+    });
+
+    const rows = [];
+    let index = 1;
+
+    dayList.forEach(day => {
+      const firstIn = day.checkIns.length > 0 ? day.checkIns[0] : null;
+      const lastOut = day.checkOuts.length > 0 ? day.checkOuts[day.checkOuts.length - 1] : null;
+
+      const timeIn = firstIn ? formatDisplayTime(firstIn.time) : '-';
+      const timeOut = lastOut ? formatDisplayTime(lastOut.time) : '-';
+
+      let statusParts = [];
+      if (firstIn && firstIn.status && firstIn.status !== 'ปกติ') {
+        statusParts.push(firstIn.status);
+      }
+      if (lastOut && lastOut.status && lastOut.status !== 'ออกงานปกติ' && lastOut.status !== 'ปกติ') {
+        statusParts.push(lastOut.status);
+      }
+
+      let statusText = 'ปกติ (ตรงเวลา)';
+      if (statusParts.length > 0) {
+        statusText = statusParts.join(' / ');
+      } else if (firstIn && !lastOut) {
+        statusText = (firstIn.status || 'เข้างานปกติ') + ' (ยังไม่ลงเวลาออก)';
+      } else if (!firstIn && lastOut) {
+        statusText = (lastOut.status || 'ออกงานปกติ') + ' (ขาดลงเวลาเข้า)';
+      }
+
+      const ot = (lastOut && lastOut.otHours) ? parseFloat(lastOut.otHours) || 0 : 0;
+
+      rows.push({
+        'ลำดับ (No.)': index++,
+        'วันเดือนปี (Date)': formatDisplayDate(day.date),
+        'รหัสพนักงาน (Emp ID)': day.employeeId,
+        'ชื่อ-นามสกุล (Name)': day.name,
+        'แผนก (Department)': day.department,
+        'เวลาเข้า (Time In)': timeIn,
+        'เวลาออก (Time Out)': timeOut,
+        'สถานะการเข้างาน (Status)': statusText,
+        'ชั่วโมง OT (OT Hours)': ot,
+        'ลายเซ็นพนักงาน (Employee Signature)': '________________________',
+        'ลายเซ็นผู้อนุมัติ (Approver Signature)': '________________________'
+      });
+    });
+
+    return rows;
+  }
+
+  function exportTimesheetReport() {
+    if (!currentFiltered || currentFiltered.length === 0) {
+      return alert('ไม่มีข้อมูลสำหรับส่งออกรายงาน');
+    }
+
+    const timesheetRows = generateTimesheetData(currentFiltered);
+    if (timesheetRows.length === 0) {
+      return alert('ไม่พบข้อมูลสำหรับจัดทำรายงานลงเวลา');
+    }
+
+    const ws = XLSX.utils.json_to_sheet(timesheetRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "แบบฟอร์มลงเวลาทำงาน");
+
+    const colWidths = [
+      { wch: 8 },  // ลำดับ
+      { wch: 14 }, // วันเดือนปี
+      { wch: 14 }, // รหัสพนักงาน
+      { wch: 22 }, // ชื่อ-นามสกุล
+      { wch: 16 }, // แผนก
+      { wch: 12 }, // เวลาเข้า
+      { wch: 12 }, // เวลาออก
+      { wch: 28 }, // สถานะการเข้างาน
+      { wch: 14 }, // ชั่วโมง OT
+      { wch: 26 }, // ลายเซ็นพนักงาน
+      { wch: 26 }  // ลายเซ็นผู้อนุมัติ
+    ];
+    ws['!cols'] = colWidths;
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const empPrefix = (currentLoggedInUser && currentLoggedInUser.role !== 'Admin')
+      ? `ใบบันทึกเวลา_${currentLoggedInUser.name}_`
+      : 'รายงานสรุปเวลาทำงาน_';
+    XLSX.writeFile(wb, `${empPrefix}${dateStr}.xlsx`);
   }
 
   window.addEventListener('load', () => {
