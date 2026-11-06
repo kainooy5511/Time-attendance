@@ -44,8 +44,63 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px 16px 60px;
+      padding: 16px 16px calc(80px + env(safe-area-inset-bottom, 0px));
       position: relative;
+    }
+
+    /* Bottom Navigation Dock */
+    .bottom-dock {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(10, 15, 28, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 1000;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.4);
+    }
+    [data-theme="light"] .bottom-dock {
+      background: rgba(255, 255, 255, 0.92);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+    }
+    .dock-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.72em;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      min-width: 62px;
+    }
+    .dock-item .dock-icon {
+      font-size: 20px;
+      line-height: 1;
+      transition: transform 0.2s;
+    }
+    .dock-item.active {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .dock-item.active .dock-icon {
+      transform: scale(1.15);
+      filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.6));
+    }
+    .dock-item:active {
+      transform: scale(0.92);
     }
 
     .container {
@@ -445,6 +500,26 @@
     msgDiv.style.display = 'block';
   }
 </script>
+
+<!-- Bottom Navigation Dock for Mobile (Always accessible) -->
+<nav class="bottom-dock">
+  <a href="index.html" class="dock-item">
+    <span class="dock-icon">🏠</span>
+    <span>หน้าหลัก</span>
+  </a>
+  <a href="scan.html" class="dock-item">
+    <span class="dock-icon">📷</span>
+    <span>สแกนหน้า</span>
+  </a>
+  <a href="history.html" class="dock-item">
+    <span class="dock-icon">📋</span>
+    <span>ประวัติ</span>
+  </a>
+  <a href="config.html" class="dock-item active">
+    <span class="dock-icon">⚙️</span>
+    <span>ตั้งค่า</span>
+  </a>
+</nav>
 
 </body>
 </html>

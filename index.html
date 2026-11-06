@@ -2,46 +2,47 @@
 <html lang="th" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Smart Attendance — ระบบลงเวลาอัจฉริยะ</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#090d16">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ลงเวลา">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #090d16 0%, #111827 50%, #0b1329 100%);
-      --text-main: #f1f5f9;
+      --bg-gradient: linear-gradient(145deg, #070a12 0%, #0e1628 45%, #0a1120 100%);
+      --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --card-bg: rgba(255, 255, 255, 0.05);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --card-hover: rgba(255, 255, 255, 0.09);
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      --badge-bg: rgba(99, 102, 241, 0.15);
-      --badge-text: #a5b4fc;
+      --card-bg: rgba(255, 255, 255, 0.045);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.08);
+      --shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
       --accent: #6366f1;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --sky: #38bdf8;
     }
 
     [data-theme="light"] {
-      --bg-gradient: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #f8fafc 100%);
+      --bg-gradient: linear-gradient(145deg, #f8fafc 0%, #eef2f6 50%, #f1f5f9 100%);
       --text-main: #0f172a;
       --text-muted: #64748b;
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --card-border: rgba(226, 232, 240, 0.85);
-      --card-hover: rgba(255, 255, 255, 1);
-      --shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
-      --badge-bg: #e0e7ff;
-      --badge-text: #4338ca;
+      --card-bg: rgba(255, 255, 255, 0.92);
+      --card-border: rgba(226, 232, 240, 0.9);
+      --card-hover: #ffffff;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
       --accent: #4f46e5;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    a, button, .btn-menu { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    a, button, .bento-card { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
     body {
       font-family: 'Sarabun', sans-serif;
@@ -51,31 +52,29 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 30px 16px 60px;
+      padding: 16px 16px calc(80px + env(safe-area-inset-bottom, 0px));
       position: relative;
       overflow-x: hidden;
     }
 
-    /* Ambient Glow */
+    /* Ambient Background Glows */
     body::before, body::after {
       content: '';
       position: fixed;
       border-radius: 50%;
-      filter: blur(100px);
+      filter: blur(120px);
       pointer-events: none;
       z-index: 0;
     }
     body::before {
-      width: 450px; height: 450px;
-      background: #6366f1;
-      opacity: 0.12;
-      top: -120px; left: -100px;
+      width: 380px; height: 380px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.25), transparent 70%);
+      top: -100px; left: -80px;
     }
     body::after {
-      width: 380px; height: 380px;
-      background: #10b981;
-      opacity: 0.1;
-      bottom: -100px; right: -100px;
+      width: 360px; height: 360px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.2), transparent 70%);
+      bottom: 20px; right: -80px;
     }
 
     .container {
@@ -85,182 +84,393 @@
       z-index: 1;
     }
 
-    /* Top Controls */
-    .top-controls {
+    /* Top Utility Bar */
+    .top-bar {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
-    .theme-toggle {
+    .live-clock-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 0.82em;
+      font-weight: 600;
+      color: var(--text-muted);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    }
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .theme-toggle-btn {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       color: var(--text-main);
-      padding: 8px 16px;
+      padding: 6px 14px;
       border-radius: 30px;
-      font-size: 0.88em;
+      font-size: 0.82em;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
       box-shadow: var(--shadow);
     }
 
-    /* Company Branding Header */
-    .header {
+    /* Header Profile & Branding */
+    .header-section {
       text-align: center;
-      margin-bottom: 30px;
-      animation: fadeInDown 0.6s ease;
+      margin-bottom: 22px;
+      animation: fadeInDown 0.5s ease;
     }
 
-    .company-logo-badge {
-      width: 72px;
-      height: 72px;
-      margin: 0 auto 16px;
-      border-radius: 20px;
+    .company-logo-wrap {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 14px;
+      border-radius: 22px;
       background: linear-gradient(135deg, #6366f1, #3b82f6);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 34px;
-      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+      font-size: 36px;
+      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.45);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      position: relative;
     }
 
-    .company-name {
+    .company-title {
       font-size: 1.55em;
-      font-weight: 700;
-      margin-bottom: 4px;
+      font-weight: 800;
       letter-spacing: -0.02em;
+      color: var(--text-main);
+      line-height: 1.25;
+      margin-bottom: 4px;
     }
 
-    .system-badge {
-      display: inline-block;
-      font-size: 0.78em;
+    .company-slogan {
+      font-size: 0.84em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76em;
       font-weight: 600;
       padding: 4px 12px;
       border-radius: 20px;
-      background: var(--badge-bg);
-      color: var(--badge-text);
-      margin-bottom: 6px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
     }
 
-    .subtitle {
-      font-size: 0.86em;
-      color: var(--text-muted);
+    /* Shift & Schedule Strip */
+    .schedule-strip {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      font-size: 0.78em;
+    }
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .schedule-item strong {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+    .schedule-divider {
+      color: var(--card-border);
+      font-weight: 300;
     }
 
-    /* Warning Alert */
-    .api-warning {
-      display: none;
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      color: #fcd34d;
-      border-radius: 14px;
-      padding: 12px 18px;
-      margin-bottom: 22px;
-      font-size: 0.88em;
-      text-align: center;
-    }
-    .api-warning a { color: #fbbf24; font-weight: 600; }
-
-    /* Bento Menu Grid */
-    .menu-cards {
+    /* Bento Grid */
+    .bento-grid {
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
 
-    .btn-menu {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 18px 20px;
+    /* 1. Hero Card: Instant Face Scanner */
+    .bento-hero {
+      display: block;
       text-decoration: none;
-      border-radius: 20px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(6, 182, 212, 0.1) 100%), var(--card-bg);
+      border: 1.5px solid rgba(16, 185, 129, 0.4);
+      border-radius: 24px;
+      padding: 22px 20px;
       color: var(--text-main);
-      box-shadow: var(--shadow);
-      transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 14px 35px rgba(16, 185, 129, 0.22);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .bento-hero:active {
+      transform: scale(0.98);
+    }
+    .bento-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%; right: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 60%);
+      pointer-events: none;
     }
 
-    .btn-menu:hover {
-      transform: translateY(-3px);
-      background: var(--card-hover);
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
     }
-
-    .card-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 16px;
+    .hero-icon-wrap {
+      width: 58px; height: 58px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #10b981, #059669);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      flex-shrink: 0;
+      font-size: 28px;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
+      border: 2px solid rgba(255, 255, 255, 0.2);
     }
-
-    /* Card Specific Colors */
-    .btn-scan {
-      border-color: rgba(16, 185, 129, 0.3);
+    .hero-badge {
+      font-size: 0.74em;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 14px;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
     }
-    .btn-scan .card-icon {
+    .hero-title {
+      font-size: 1.25em;
+      font-weight: 800;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+    .hero-desc {
+      font-size: 0.84em;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 16px;
+    }
+    .hero-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-radius: 16px;
       background: linear-gradient(135deg, #10b981, #059669);
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+      color: white;
+      font-weight: 700;
+      font-size: 0.92em;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
     }
 
-    .btn-register .card-icon {
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    /* 2-Column Split Bento Row */
+    .bento-row-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
-    .btn-history .card-icon {
-      background: linear-gradient(135deg, #0284c7, #0369a1);
-      box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);
-    }
-
-    .btn-config .card-icon {
-      background: linear-gradient(135deg, #64748b, #475569);
-      box-shadow: 0 6px 20px rgba(100, 116, 139, 0.35);
-    }
-
-    .card-text { flex: 1; }
-    .card-title {
-      font-size: 1.05em;
-      font-weight: 600;
-      margin-bottom: 2px;
+    .bento-card-small {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-decoration: none;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px 14px;
       color: var(--text-main);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      min-height: 135px;
+      transition: transform 0.2s, background 0.2s;
     }
-    .card-desc {
-      font-size: 0.82em;
-      color: var(--text-muted);
+    .bento-card-small:active {
+      transform: scale(0.97);
     }
 
-    .card-arrow {
-      font-size: 20px;
+    .card-small-icon {
+      width: 44px; height: 44px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+    .icon-history {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35);
+    }
+    .icon-register {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+    }
+    .icon-config {
+      background: linear-gradient(135deg, #475569, #334155);
+      box-shadow: 0 6px 18px rgba(71, 85, 105, 0.35);
+    }
+
+    .card-small-title {
+      font-size: 0.95em;
+      font-weight: 700;
+      margin-bottom: 3px;
+      line-height: 1.25;
+    }
+    .card-small-desc {
+      font-size: 0.74em;
       color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    /* 3. Full-width Admin Card */
+    .bento-card-full {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 15px 18px;
+      color: var(--text-main);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
       transition: transform 0.2s;
     }
-    .btn-menu:hover .card-arrow {
-      transform: translateX(4px);
-      color: var(--text-main);
+    .bento-card-full:active {
+      transform: scale(0.98);
     }
-
-    /* Footer */
-    .footer {
-      text-align: center;
-      margin-top: 36px;
-      font-size: 0.78em;
+    .bento-card-full .card-text {
+      flex: 1;
+    }
+    .bento-card-full .card-arrow {
+      font-size: 20px;
       color: var(--text-muted);
     }
 
-    /* Keyframes */
+    /* PWA Install Card */
+    .pwa-install-banner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(59, 130, 246, 0.2));
+      border: 1px solid rgba(99, 102, 241, 0.45);
+      border-radius: 20px;
+      padding: 14px 18px;
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
+      margin-bottom: 14px;
+    }
+    .pwa-install-banner:active {
+      transform: scale(0.98);
+    }
+
+    /* Warning for Config */
+    .api-warning {
+      display: none;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fcd34d;
+      border-radius: 16px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      font-size: 0.86em;
+      text-align: center;
+    }
+    .api-warning a { color: #fbbf24; font-weight: 700; }
+
+    /* Bottom Navigation Dock (Native App Style) */
+    .bottom-dock {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(10, 15, 28, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 1000;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.4);
+    }
+    [data-theme="light"] .bottom-dock {
+      background: rgba(255, 255, 255, 0.92);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+    }
+    .dock-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.72em;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      min-width: 62px;
+    }
+    .dock-item .dock-icon {
+      font-size: 20px;
+      line-height: 1;
+      transition: transform 0.2s;
+    }
+    .dock-item.active {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .dock-item.active .dock-icon {
+      transform: scale(1.15);
+      filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.6));
+    }
+    .dock-item:active {
+      transform: scale(0.92);
+    }
+
     @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-15px); }
+      from { opacity: 0; transform: translateY(-12px); }
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
@@ -268,94 +478,137 @@
 <body>
 
 <div class="container">
-  <!-- Top Bar Theme Toggle -->
-  <div class="top-controls">
-    <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">
+  <!-- Top Utility Bar -->
+  <div class="top-bar">
+    <div class="live-clock-badge">
+      <span class="pulse-dot"></span>
+      <span id="liveTime">00:00:00 น.</span>
+    </div>
+    <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">
       <span id="themeIcon">☀️</span> <span id="themeLabel">สลับโหมด</span>
     </button>
   </div>
 
-  <!-- Header & Company Logo -->
-  <div class="header">
-    <div class="company-logo-badge" id="companyLogo">🏢</div>
-    <span class="system-badge">GPS + AI FACE SCAN V2</span>
-    <h1 class="company-name" id="companyName">ระบบลงเวลาเข้างาน</h1>
-    <p class="subtitle" id="companySlogan">Face Recognition &amp; GPS Attendance System</p>
+  <!-- Header & Company Branding -->
+  <div class="header-section">
+    <div class="company-logo-wrap" id="companyLogo">🏢</div>
+    <div class="status-pill">
+      <span>●</span> <span id="onlinePill">ระบบพร้อมทำงาน · AI Face Engine</span>
+    </div>
+    <h1 class="company-title" id="companyName" style="margin-top: 8px;">ระบบลงเวลาเข้างาน</h1>
+    <p class="company-slogan" id="companySlogan">Face Recognition &amp; GPS Attendance System</p>
   </div>
 
-  <!-- LINE In-App Browser Detected Alert -->
-  <div id="lineAlert" style="display:none; background:rgba(245, 158, 11, 0.16); border:1.5px solid #f59e0b; color:#fde68a; border-radius:18px; padding:16px 18px; margin-bottom:20px; text-align:left; box-shadow:0 8px 25px rgba(245,158,11,0.25);">
-    <div style="font-weight:700; font-size:1.05em; margin-bottom:6px; color:#fbbf24; display:flex; align-items:center; gap:8px;">
+  <!-- Realtime Shift Hours Indicator Strip -->
+  <div class="schedule-strip">
+    <div class="schedule-item">
+      <span>⏰</span>
+      <span>เริ่มงาน: <strong id="stripWorkStart">08:00</strong> น.</span>
+    </div>
+    <span class="schedule-divider">|</span>
+    <div class="schedule-item">
+      <span>⏱️</span>
+      <span>เริ่ม OT: <strong id="stripOtStart">17:00</strong> น.</span>
+    </div>
+    <span class="schedule-divider">|</span>
+    <div class="schedule-item">
+      <span>📍</span>
+      <span>GPS: <strong>เปิดออโต้</strong></span>
+    </div>
+  </div>
+
+  <!-- LINE In-App Browser Warning -->
+  <div id="lineAlert" style="display:none; background:rgba(245, 158, 11, 0.16); border:1.5px solid #f59e0b; color:#fde68a; border-radius:18px; padding:16px 18px; margin-bottom:16px; text-align:left; box-shadow:0 8px 25px rgba(245,158,11,0.25);">
+    <div style="font-weight:700; font-size:1.02em; margin-bottom:6px; color:#fbbf24; display:flex; align-items:center; gap:8px;">
       <span>⚠️ กำลังเปิดในแอป LINE</span>
     </div>
-    <div style="font-size:0.88em; line-height:1.5; color:#fef3c7;">
-      แอป LINE จะบล็อกการดึงไอคอนลงหน้าจอโฮมและกล้อง<br>
-      👉 <strong>วิธีปลดล็อค:</strong> แตะปุ่มจุด 3 จุด <strong>(⋮ หรือ 📤)</strong> ที่มุมขวาบนของหน้าจอ แล้วเลือก <strong>"เปิดด้วยเบราว์เซอร์อื่น" (Open in Safari / Chrome)</strong> ครับ
+    <div style="font-size:0.86em; line-height:1.5; color:#fef3c7;">
+      แอป LINE บล็อกการดึงไอคอนลงหน้าจอโฮมและกล้อง<br>
+      👉 แตะปุ่มจุด 3 จุด <strong>(⋮ หรือ 📤)</strong> ที่มุมขวาบน แล้วเลือก <strong>"เปิดด้วยเบราว์เซอร์อื่น" (Open in Safari / Chrome)</strong>
     </div>
   </div>
 
-  <!-- Warning for Config -->
+  <!-- API Warning -->
   <div id="apiWarning" class="api-warning">
     ⚠️ ยังไม่ได้ตั้งค่า API URL — <a href="config.html">ไปที่หน้าตั้งค่า</a>
   </div>
 
-  <!-- Bento Menu Grid -->
-  <div class="menu-cards">
-    <!-- PWA Install Action Banner -->
-    <div id="pwaInstallCard" class="btn-menu btn-install" onclick="installPWA()" style="cursor:pointer; background:linear-gradient(135deg, rgba(99,102,241,0.18), rgba(59,130,246,0.22)); border-color:rgba(99,102,241,0.5);">
-      <div class="card-icon" style="background:linear-gradient(135deg, #6366f1, #3b82f6); box-shadow:0 6px 20px rgba(99,102,241,0.45);">📲</div>
-      <div class="card-text">
-        <div class="card-title" style="color:#a5b4fc;">ติดตั้งแอปลงบนหน้าจอมือถือ (Add to Home)</div>
-        <div class="card-desc">คลิกเพื่อดึงไอคอนลงหน้าจอมือถือ เปิดเต็มจอเหมือนแอปจริง</div>
+  <!-- PWA Install Banner -->
+  <div id="pwaInstallCard" class="pwa-install-banner" onclick="installPWA()">
+    <div class="card-small-icon" style="background:linear-gradient(135deg, #6366f1, #3b82f6); box-shadow:0 6px 18px rgba(99,102,241,0.45); margin:0;">📲</div>
+    <div style="flex:1;">
+      <div style="font-size:0.92em; font-weight:700; color:#a5b4fc;">ดึงแอปลงหน้าจอมือถือ (Add to Home)</div>
+      <div style="font-size:0.75em; color:var(--text-muted); margin-top:2px;">เปิดใช้งานแบบแอปจริง เต็มจอ ไม่ติดแถบเว็บ</div>
+    </div>
+    <span style="font-size:18px; color:#818cf8; font-weight:700;">➕</span>
+  </div>
+
+  <!-- Bento Grid Menu -->
+  <div class="bento-grid">
+    <!-- 1. HERO CARD: Scanner -->
+    <a href="scan.html" class="bento-hero">
+      <div class="hero-top">
+        <div class="hero-icon-wrap">📷</div>
+        <span class="hero-badge">⚡ สแกนไว &lt; 2 วินาที</span>
       </div>
-      <span class="card-arrow" style="color:#818cf8;">➕</span>
+      <div class="hero-title">สแกนใบหน้าลงเวลา</div>
+      <div class="hero-desc">ตรวจจับ เข้างาน / ออกงาน / คำนวณ OT ประจำวันอัตโนมัติด้วย AI</div>
+      <div class="hero-action-btn">
+        <span>แตะเพื่อเปิดกล้องสแกนทันที</span>
+        <span style="font-size:18px;">➔</span>
+      </div>
+    </a>
+
+    <!-- 2. SPLIT ROW: History & Registration -->
+    <div class="bento-row-split">
+      <a href="history.html" class="bento-card-small">
+        <div class="card-small-icon icon-history">📋</div>
+        <div>
+          <div class="card-small-title">ประวัติการลงเวลา</div>
+          <div class="card-small-desc">ดูประวัติส่วนตัว &amp; โหลดรายงาน Excel</div>
+        </div>
+      </a>
+
+      <a href="register.html" class="bento-card-small">
+        <div class="card-small-icon icon-register">👤</div>
+        <div>
+          <div class="card-small-title">ลงทะเบียนพนักงาน</div>
+          <div class="card-small-desc">เพิ่มพนักงาน &amp; บันทึกใบหน้าใหม่ (Admin)</div>
+        </div>
+      </a>
     </div>
 
-    <!-- 1. Scan Attendance (Hero Card) -->
-    <a href="scan.html" class="btn-menu btn-scan">
-      <div class="card-icon">📷</div>
+    <!-- 3. FULL ROW: System Settings -->
+    <a href="config.html" class="bento-card-full">
+      <div class="card-small-icon icon-config" style="margin:0;">⚙️</div>
       <div class="card-text">
-        <div class="card-title">สแกนลงเวลา (เข้า/ออก/OT อัตโนมัติ)</div>
-        <div class="card-desc">สแกนครั้งแรก = เข้างาน / ครั้งที่ 2 = ออกงาน (+OT)</div>
+        <div style="font-size:0.98em; font-weight:700;">ตั้งค่าระบบ &amp; พิกัด GPS</div>
+        <div style="font-size:0.78em; color:var(--text-muted); margin-top:2px;">กำหนดเวลางาน (08:00 น.), เริ่ม OT (17:00 น.) และ PIN</div>
       </div>
       <span class="card-arrow">›</span>
     </a>
-
-    <!-- 2. Attendance History -->
-    <a href="history.html" class="btn-menu btn-history">
-      <div class="card-icon">📋</div>
-      <div class="card-text">
-        <div class="card-title">ประวัติและรายงานการลงเวลา</div>
-        <div class="card-desc">ดูประวัติส่วนตัว หรือดูสรุป &amp; โหลด Excel (Admin)</div>
-      </div>
-      <span class="card-arrow">›</span>
-    </a>
-
-    <!-- 3. Register Employee -->
-    <a href="register.html" class="btn-menu btn-register">
-      <div class="card-icon">👤</div>
-      <div class="card-text">
-        <div class="card-title">ลงทะเบียนพนักงาน (Admin Only)</div>
-        <div class="card-desc">เพิ่มพนักงานใหม่ และกำหนดสิทธิ์ (ต้องใส่ PIN)</div>
-      </div>
-      <span class="card-arrow">›</span>
-    </a>
-
-    <!-- 4. System Settings -->
-    <a href="config.html" class="btn-menu btn-config">
-      <div class="card-icon">⚙️</div>
-      <div class="card-text">
-        <div class="card-title">ตั้งค่าระบบ (Admin Only)</div>
-        <div class="card-desc">ตั้งเวลางาน, เวลาเริ่ม OT, GPS และรหัสผ่าน PIN</div>
-      </div>
-      <span class="card-arrow">›</span>
-    </a>
-  </div>
-
-  <div class="footer">
-    Smart Attendance Cloud System · Powered by Netlify &amp; Google Sheets
   </div>
 </div>
+
+<!-- Bottom Navigation Dock for Mobile (Always accessible) -->
+<nav class="bottom-dock">
+  <a href="index.html" class="dock-item active">
+    <span class="dock-icon">🏠</span>
+    <span>หน้าหลัก</span>
+  </a>
+  <a href="scan.html" class="dock-item">
+    <span class="dock-icon">📷</span>
+    <span>สแกนหน้า</span>
+  </a>
+  <a href="history.html" class="dock-item">
+    <span class="dock-icon">📋</span>
+    <span>ประวัติ</span>
+  </a>
+  <a href="config.html" class="dock-item">
+    <span class="dock-icon">⚙️</span>
+    <span>ตั้งค่า</span>
+  </a>
+</nav>
 
 <!-- Dual Install Instruction Modal (iOS & Android) -->
 <div id="installGuideModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px;">
@@ -417,6 +670,16 @@
 <script>
   let deferredPrompt = null;
 
+  // Live Clock Updater
+  function updateLiveClock() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const clockEl = document.getElementById('liveTime');
+    if (clockEl) clockEl.innerText = timeStr + ' น.';
+  }
+  setInterval(updateLiveClock, 1000);
+  updateLiveClock();
+
   function switchGuideTab(platform) {
     const tabIos = document.getElementById('tabIos');
     const tabAndroid = document.getElementById('tabAndroid');
@@ -436,7 +699,7 @@
       tabIos.style.background = 'transparent';
       tabIos.style.color = 'var(--text-muted)';
       guideAndroid.style.display = 'flex';
-      guideIos.style.display = 'none';
+      guideAndroid.style.display = 'none';
     }
   }
 
@@ -458,7 +721,6 @@
       return;
     }
 
-    // Show guide modal tailored to detected OS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     const modal = document.getElementById('installGuideModal');
     if (isIOS) {
@@ -475,7 +737,6 @@
       navigator.serviceWorker.register('sw.js')
         .then(reg => {
           console.log('ServiceWorker registered:', reg.scope);
-          // สั่งตรวจสอบการอัปเดตเวอร์ชันใหม่จาก Netlify อัตโนมัติทุกครั้งที่เปิดแอป
           reg.update();
         })
         .catch(err => console.log('ServiceWorker error:', err));
@@ -509,12 +770,19 @@
     }
   }
 
-  // Load Custom Company Branding
-  function loadBranding() {
+  // Load Custom Company Branding and Shift Times
+  function loadBrandingAndTimes() {
     const savedName = localStorage.getItem('company_name');
     const savedSlogan = localStorage.getItem('company_slogan');
     if (savedName) document.getElementById('companyName').innerText = savedName;
     if (savedSlogan) document.getElementById('companySlogan').innerText = savedSlogan;
+
+    const savedWork = localStorage.getItem('work_start_time') || '08:00';
+    const savedOt = localStorage.getItem('ot_start_time') || '17:00';
+    const wsEl = document.getElementById('stripWorkStart');
+    const otEl = document.getElementById('stripOtStart');
+    if (wsEl) wsEl.innerText = savedWork;
+    if (otEl) otEl.innerText = savedOt;
   }
 
   function checkLineBrowser() {
@@ -528,7 +796,7 @@
 
   window.addEventListener('load', () => {
     initTheme();
-    loadBranding();
+    loadBrandingAndTimes();
     checkLineBrowser();
     const apiUrl = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
     if (!apiUrl) {
