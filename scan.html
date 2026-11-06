@@ -432,6 +432,77 @@
       gap: 10px;
     }
 
+    /* Switch Camera Button */
+    .btn-switch-cam {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.76em;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      transition: transform 0.15s;
+    }
+    .btn-switch-cam:active {
+      transform: scale(0.92);
+    }
+
+    /* Camera Error Card */
+    .camera-error-card {
+      width: 100%;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-top: 14px;
+      text-align: center;
+      animation: fadeInDown 0.3s ease;
+    }
+    .error-card-title {
+      font-size: 0.95em;
+      font-weight: 700;
+      color: #f87171;
+      margin-bottom: 4px;
+    }
+    .error-card-desc {
+      font-size: 0.8em;
+      color: #fca5a5;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .error-action-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    .btn-troubleshoot, .btn-retry-cam {
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 0.82em;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-troubleshoot {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+    .btn-retry-cam {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
     /* Bottom Navigation Dock */
     .bottom-dock {
       position: fixed;
@@ -511,7 +582,7 @@
   </div>
 
   <div id="gps-alert-box" class="gps-alert">
-    ⚠️ คุณอยู่นอกพื้นที่ที่กำหนด!<br>กรุณาเข้าใกล้จุดเช็คอินแล้วรีเฟรชหน้าจอ
+    ⚠️ <span id="gpsAlertDesc">คุณอยู่นอกพื้นที่ที่กำหนด! กรุณาเข้าใกล้จุดเช็คอินแล้วรีเฟรชหน้าจอ</span>
   </div>
 
   <div class="video-container">
@@ -523,6 +594,17 @@
     </div>
     <div id="overlay-status">รอเริ่มสแกน...</div>
     <video id="video" autoplay muted playsinline></video>
+    <button id="btnSwitchCam" class="btn-switch-cam" onclick="switchCamera()" title="สลับกล้องหน้า/หลัง">🔄 สลับกล้อง</button>
+  </div>
+
+  <!-- Camera Controls & Error Box -->
+  <div id="cameraErrorBox" class="camera-error-card" style="display:none;">
+    <div class="error-card-title">⚠️ ไม่สามารถเปิดกล้องได้</div>
+    <div class="error-card-desc" id="cameraErrorMsg">Requested device not found</div>
+    <div class="error-action-row">
+      <button class="btn-troubleshoot" onclick="openCameraHelpModal()">📖 วิธีเปิดสิทธิ์กล้อง</button>
+      <button class="btn-retry-cam" onclick="startCameraAuto()">🔄 ลองใหม่อีกครั้ง</button>
+    </div>
   </div>
 
   <button id="btnStart" class="btn-start" onclick="startCameraManual()" style="display:none;">📷 เปิดกล้องสแกนใบหน้า</button>
@@ -591,6 +673,46 @@
     <span>ตั้งค่า</span>
   </a>
 </nav>
+
+<!-- Camera Troubleshooting Modal -->
+<div id="cameraHelpModal" class="modal-overlay" style="display:none;">
+  <div class="modal-content" style="max-width:390px; text-align:left;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="font-size:1.1em; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+        <span>📷</span> วิธีเปิดสิทธิ์กล้องในเบราว์เซอร์
+      </h3>
+      <button onclick="closeCameraHelpModal()" style="background:none; border:none; font-size:24px; color:var(--text-muted); cursor:pointer; line-height:1;">×</button>
+    </div>
+
+    <div style="font-size:0.84em; color:var(--text-muted); margin-bottom:14px; line-height:1.5;">
+      หากเบราว์เซอร์บล็อกกล้อง หรือขึ้นข้อความ Device Not Found ให้ทำตามขั้นตอนนี้:
+    </div>
+
+    <div style="background:rgba(255,255,255,0.04); border:1px solid var(--card-border); border-radius:14px; padding:12px; margin-bottom:12px; font-size:0.82em; line-height:1.6;">
+      <strong style="color:#38bdf8;">🍎 iPhone / Safari:</strong>
+      <ol style="padding-left:18px; margin-top:4px;">
+        <li>แตะไอคอน <strong>"aA"</strong> หรือไอคอนตั้งค่าที่แถบ URL ล่างสุด</li>
+        <li>เลือก <strong>"การตั้งค่าเว็บไซต์" (Website Settings)</strong></li>
+        <li>ที่หัวข้อ <strong>กล้อง (Camera)</strong> $\rightarrow$ เลือก <strong>"อนุญาต" (Allow)</strong></li>
+        <li>แตะปุ่ม "เสร็จสิ้น" แล้วรีเฟรชหน้าเว็บ 1 ครั้ง</li>
+      </ol>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.04); border:1px solid var(--card-border); border-radius:14px; padding:12px; margin-bottom:16px; font-size:0.82em; line-height:1.6;">
+      <strong style="color:#34d399;">🤖 Android / Chrome:</strong>
+      <ol style="padding-left:18px; margin-top:4px;">
+        <li>แตะไอคอน <strong>แม่กุญแจ 🔒</strong> หน้า URL ด้านบน</li>
+        <li>เลือก <strong>"สิทธิ์" (Permissions)</strong></li>
+        <li>เปิดสวิตช์ <strong>"กล้อง" (Camera)</strong> ให้เป็นสีเขียว</li>
+        <li>รีเฟรชหน้าจอ 1 ครั้ง กล้องจะเปิดทันที</li>
+      </ol>
+    </div>
+
+    <button onclick="closeCameraHelpModal(); startCameraAuto();" style="width:100%; padding:12px; border-radius:14px; background:linear-gradient(135deg, #10b981, #059669); color:white; font-weight:700; border:none; cursor:pointer;">
+      ✅ เข้าใจแล้ว ลองเปิดกล้องอีกครั้ง
+    </button>
+  </div>
+</div>
 
 <!-- Modal 1: Confirm Details -->
 <div id="confirmModal" class="modal-overlay">
@@ -746,32 +868,96 @@
     } catch(e) {}
   }
 
-  // 2. ขนานที่ 1: สั่งเปิดกล้องทันทีที่เข้าหน้า (Auto-Camera Instant)
-  function startCameraAuto() {
+  let currentFacingMode = 'user'; // 'user' (หน้า) หรือ 'environment' (หลัง)
+  let currentStream = null;
+
+  function hideCameraError() {
+    const errBox = document.getElementById('cameraErrorBox');
+    if (errBox) errBox.style.display = 'none';
+    if (btnStart) btnStart.style.display = 'none';
+  }
+
+  function handleCameraFailure(err) {
+    const errBox = document.getElementById('cameraErrorBox');
+    const errMsg = document.getElementById('cameraErrorMsg');
+    let friendlyText = 'ไม่สามารถเปิดกล้องได้: ' + (err.message || '');
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      friendlyText = 'เบราว์เซอร์ยังไม่ได้รับอนุญาตให้ใช้กล้อง (Permission Denied)';
+    } else if (err.name === 'NotFoundError' || err.message.includes('not found')) {
+      friendlyText = 'ไม่พบอุปกรณ์กล้อง หรือกล้องถูกโปรแกรมอื่นใช้งานอยู่ (Device Not Found)';
+    } else if (err.name === 'NotReadableError') {
+      friendlyText = 'กล้องกำลังถูกใช้งานโดยแอปอื่น กรุณาปิดแอปอื่นแล้วลองใหม่';
+    }
+    if (errMsg) errMsg.innerText = friendlyText;
+    if (errBox) errBox.style.display = 'block';
+    if (btnStart) btnStart.style.display = 'block';
+    overlayStatus.innerText = '❌ กล้องไม่พร้อมใช้งาน';
+  }
+
+  function openCameraHelpModal() {
+    document.getElementById('cameraHelpModal').style.display = 'flex';
+  }
+
+  function closeCameraHelpModal() {
+    document.getElementById('cameraHelpModal').style.display = 'none';
+  }
+
+  // 2. ขนานที่ 1: สั่งเปิดกล้องทันทีที่เข้าหน้า (Auto-Camera Instant พร้อม Fallback และสลับกล้อง)
+  async function startCameraAuto(facing = null) {
+    if (facing) currentFacingMode = facing;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showError('⚠️ เบราว์เซอร์บล็อกกล้องเนื่องจากไม่ใช่ HTTPS<br>กรุณาเปิดผ่าน https:// (Netlify)');
+      handleCameraFailure(new Error('เบราว์เซอร์บล็อกกล้องเนื่องจากไม่ใช่ HTTPS กรุณาเปิดผ่าน https://'));
       return;
     }
 
-    overlayStatus.innerText = '📷 กำลังเปิดกล้อง...';
-    navigator.mediaDevices.getUserMedia({
+    if (currentStream) {
+      try {
+        currentStream.getTracks().forEach(track => track.stop());
+      } catch(e) {}
+      currentStream = null;
+    }
+
+    hideCameraError();
+    overlayStatus.innerText = '📷 กำลังเปิดกล้อง' + (currentFacingMode === 'user' ? 'หน้า' : 'หลัง') + '...';
+
+    const constraints = {
       video: {
-        facingMode: 'user',
+        facingMode: currentFacingMode,
         width: { ideal: 640 },
         height: { ideal: 480 }
       }
-    })
-    .then(stream => {
+    };
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      currentStream = stream;
       video.srcObject = stream;
       video.onloadedmetadata = () => {
         isCameraReady = true;
         checkAndStartAutoScan();
       };
-    })
-    .catch(err => {
-      btnStart.style.display = 'block';
-      showError('กรุณาแตะปุ่มเพื่ออนุญาตเปิดกล้อง: ' + err.message);
-    });
+    } catch(err) {
+      console.warn('Initial camera facingMode failed, falling back to default video:', err);
+      // Defensive Fallback: หากเจาะจง facingMode แล้ว error เช่น "Requested device not found" ให้เปิดกล้องใดก็ได้ที่พบในเครื่องทันที!
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        currentStream = fallbackStream;
+        video.srcObject = fallbackStream;
+        video.onloadedmetadata = () => {
+          isCameraReady = true;
+          checkAndStartAutoScan();
+        };
+      } catch(fallbackErr) {
+        handleCameraFailure(fallbackErr);
+      }
+    }
+  }
+
+  function switchCamera() {
+    currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+    const switchBtn = document.getElementById('btnSwitchCam');
+    if (switchBtn) switchBtn.innerText = currentFacingMode === 'user' ? '🔄 กล้องหน้า' : '🔄 กล้องหลัง';
+    startCameraAuto(currentFacingMode);
   }
 
   function startCameraManual() {
@@ -796,12 +982,15 @@
     }
   }
 
-  // 4. ขนานที่ 3: ตรวจสอบ GPS ใน Background (ไม่บล็อกกล้อง ไม่บล็อก AI)
+  // 4. ขนานที่ 3: ตรวจสอบ GPS ใน Background (แสดงสถานที่และรัศมีชัดเจน ไม่บล็อกกล้อง ไม่บล็อก AI)
   function checkGPSBackground() {
     if (!navigator.geolocation) {
-      gpsStatus.innerHTML = '<span style="color:#94a3b8">📍 GPS: ข้าม</span>';
+      gpsStatus.innerHTML = '<span style="color:#94a3b8">📍 GPS: อุปกรณ์ไม่รองรับ</span>';
       return;
     }
+
+    gpsStatus.innerHTML = '<span style="color:#38bdf8">📍 กำลังระบุพิกัด GPS...</span>';
+
     navigator.geolocation.getCurrentPosition(
       async pos => {
         currentLat = pos.coords.latitude;
@@ -818,23 +1007,35 @@
           }
           updateScheduleHint();
 
+          const compName = localStorage.getItem('company_name') || 'พื้นที่สำนักงาน';
+          const radiusM = (config.radius && config.radius > 0) ? (config.radius * 1000).toFixed(0) : 0;
+
           if (!config.lat || !config.lng || config.radius == 0) {
-            gpsStatus.innerHTML = '<span style="color:#34d399">📍 GPS: ไม่จำกัดพื้นที่</span>';
+            gpsStatus.innerHTML = '<span style="color:#34d399">✅ 📍 ทุกจุดพิกัด (ไม่จำกัดรัศมี)</span>';
+            gpsAlertBox.style.display = 'none';
           } else {
-            const dist = haversineKm(currentLat, currentLng, config.lat, config.lng);
-            if (dist <= config.radius) {
-              gpsStatus.innerHTML = '<span style="color:#34d399">📍 GPS ผ่าน (ห่าง ' + (dist * 1000).toFixed(0) + ' ม.)</span>';
+            const distKm = haversineKm(currentLat, currentLng, config.lat, config.lng);
+            const distM = (distKm * 1000).toFixed(0);
+
+            if (distKm <= config.radius) {
+              gpsStatus.innerHTML = `<span style="color:#34d399">✅ 📍 อยู่ใน${compName} (ห่าง ${distM} ม. / รัศมี ${radiusM} ม.)</span>`;
+              gpsAlertBox.style.display = 'none';
             } else {
-              gpsStatus.innerHTML = '<span style="color:#f87171">📍 GPS นอกพื้นที่ (' + dist.toFixed(2) + ' km)</span>';
+              const displayDist = distKm < 1 ? `${distM} เมตร` : `${distKm.toFixed(2)} กม.`;
+              gpsStatus.innerHTML = `<span style="color:#f87171">❌ 📍 อยู่นอก${compName} (ห่าง ${displayDist} / เกิน ${radiusM} ม.)</span>`;
+              const alertDesc = document.getElementById('gpsAlertDesc');
+              if (alertDesc) alertDesc.innerText = `คุณอยู่ห่างจาก${compName} ${displayDist} (อนุญาตในรัศมี ${radiusM} ม.) กรุณาขยับเข้าใกล้จุดเช็คอิน`;
               gpsAlertBox.style.display = 'block';
             }
           }
         } catch(e) {}
       },
-      () => {
-        gpsStatus.innerHTML = '<span style="color:#94a3b8">📍 GPS: เปิดอัตโนมัติ</span>';
+      err => {
+        let msg = 'ไม่สามารถดึงตำแหน่งได้';
+        if (err.code === 1) msg = '⚠️ ยังไม่ได้อนุญาตสิทธิ์ GPS (กรุณาเปิดตำแหน่งที่ตั้งในเบราว์เซอร์)';
+        gpsStatus.innerHTML = `<span style="color:#f59e0b">📍 ${msg}</span>`;
       },
-      { timeout: 7000, enableHighAccuracy: false }
+      { timeout: 7000, enableHighAccuracy: true }
     );
   }
 
