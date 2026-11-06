@@ -1,32 +1,20 @@
 <!DOCTYPE html>
-<html lang="th" data-theme="dark">
+<html lang="th" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ตั้งค่าระบบ — Admin Only</title>
+  <meta name="theme-color" content="#f8fafc">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #090d16 0%, #111827 50%, #0b1329 100%);
-      --text-main: #f1f5f9;
-      --text-muted: #94a3b8;
-      --card-bg: rgba(255, 255, 255, 0.05);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --card-hover: rgba(255, 255, 255, 0.08);
-      --input-bg: rgba(255, 255, 255, 0.06);
-      --input-border: rgba(255, 255, 255, 0.12);
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      --accent: #6366f1;
-    }
-
-    [data-theme="light"] {
-      --bg-gradient: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #f8fafc 100%);
+      --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #edf2f7 50%, #f1f5f9 100%);
       --text-main: #0f172a;
       --text-muted: #64748b;
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --card-border: rgba(226, 232, 240, 0.85);
-      --card-hover: rgba(255, 255, 255, 1);
+      --card-bg: rgba(255, 255, 255, 0.94);
+      --card-border: rgba(226, 232, 240, 0.95);
+      --card-hover: #ffffff;
       --input-bg: #ffffff;
       --input-border: #cbd5e1;
       --shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
@@ -55,20 +43,15 @@
       left: 0;
       right: 0;
       height: 64px;
-      background: rgba(10, 15, 28, 0.88);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
       display: flex;
       align-items: center;
       justify-content: space-around;
       z-index: 1000;
       padding-bottom: env(safe-area-inset-bottom, 0px);
-      box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.4);
-    }
-    [data-theme="light"] .bottom-dock {
-      background: rgba(255, 255, 255, 0.92);
-      border-top: 1px solid rgba(0, 0, 0, 0.08);
       box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
     }
     .dock-item {
@@ -92,12 +75,12 @@
       transition: transform 0.2s;
     }
     .dock-item.active {
-      color: #38bdf8;
+      color: #4f46e5;
       font-weight: 700;
     }
     .dock-item.active .dock-icon {
       transform: scale(1.15);
-      filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.6));
+      filter: drop-shadow(0 2px 8px rgba(79, 70, 229, 0.4));
     }
     .dock-item:active {
       transform: scale(0.92);
@@ -243,7 +226,7 @@
 <div class="container">
   <div class="top-bar">
     <a href="index.html" class="back-btn">← กลับหน้าหลัก</a>
-    <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">🌙</button>
+    <span style="font-size: 0.85em; font-weight: 600; color: var(--text-muted); padding: 6px 12px; background: var(--card-bg); border-radius: 20px; border: 1px solid var(--card-border);">☀️ โหมดสว่าง</span>
   </div>
 
   <!-- PIN Gate -->
@@ -355,17 +338,14 @@
   let currentAdminPin = localStorage.getItem('admin_pin') || '1234';
 
   function initTheme() {
-    const saved = localStorage.getItem('app_theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
-    document.getElementById('themeBtn').innerText = saved === 'light' ? '☀️' : '🌙';
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('app_theme', 'light');
   }
 
   function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('app_theme', next);
-    document.getElementById('themeBtn').innerText = next === 'light' ? '☀️' : '🌙';
+    // Light mode only
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('app_theme', 'light');
   }
 
   function verifyPin() {
@@ -384,7 +364,7 @@
 
     document.getElementById('companyNameInput').value = localStorage.getItem('company_name') || 'ระบบลงเวลาเข้างาน';
     document.getElementById('companySloganInput').value = localStorage.getItem('company_slogan') || 'Face Recognition & GPS Attendance System';
-    document.getElementById('workStartTime').value = localStorage.getItem('work_start_time') || '08:30';
+    document.getElementById('workStartTime').value = localStorage.getItem('work_start_time') || '08:00';
     document.getElementById('otStartTime').value = localStorage.getItem('ot_start_time') || '17:00';
     document.getElementById('adminPinInput').value = currentAdminPin;
 

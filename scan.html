@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th" data-theme="dark">
+<html lang="th" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,33 +10,21 @@
   <link rel="preconnect" href="https://justadudewhohacks.github.io">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#f8fafc">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/api-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.js"></script>
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #090d16 0%, #111827 50%, #0b1329 100%);
-      --text-main: #f1f5f9;
-      --text-muted: #94a3b8;
-      --card-bg: rgba(255, 255, 255, 0.05);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --card-hover: rgba(255, 255, 255, 0.08);
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      --accent: #6366f1;
-      --success: #10b981;
-    }
-
-    [data-theme="light"] {
-      --bg-gradient: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #f8fafc 100%);
+      --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #edf2f7 50%, #f1f5f9 100%);
       --text-main: #0f172a;
       --text-muted: #64748b;
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --card-border: rgba(226, 232, 240, 0.85);
-      --card-hover: rgba(255, 255, 255, 1);
+      --card-bg: rgba(255, 255, 255, 0.94);
+      --card-border: rgba(226, 232, 240, 0.95);
+      --card-hover: #ffffff;
       --shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
       --accent: #4f46e5;
       --success: #059669;
@@ -366,13 +354,14 @@
       gap: 10px;
     }
     .daily-item {
-      background: rgba(255, 255, 255, 0.03);
+      background: #ffffff;
       border: 1px solid var(--card-border);
       border-radius: 14px;
       padding: 10px 12px;
       display: flex;
       flex-direction: column;
       gap: 3px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
     }
     .daily-item.in-item {
       border-left: 4px solid #10b981;
@@ -569,7 +558,6 @@
 <div class="page-wrap">
   <div class="top-bar">
     <a href="index.html" class="back-btn">← กลับเมนูหลัก</a>
-    <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">🌙</button>
   </div>
 
   <div class="mode-indicator">
@@ -757,17 +745,8 @@
 
 <script>
   function initTheme() {
-    const saved = localStorage.getItem('app_theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
-    document.getElementById('themeBtn').innerText = saved === 'light' ? '☀️' : '🌙';
-  }
-
-  function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('app_theme', next);
-    document.getElementById('themeBtn').innerText = next === 'light' ? '☀️' : '🌙';
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('app_theme', 'light');
   }
 
   const API_URL        = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');

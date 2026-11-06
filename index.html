@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="th" data-theme="dark">
+<html lang="th" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Smart Attendance — ระบบลงเวลาอัจฉริยะ</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#090d16">
+  <meta name="theme-color" content="#f8fafc">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="ลงเวลา">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,28 +17,17 @@
   <script src="js/api-config.js"></script>
   <style>
     :root {
-      --bg-gradient: linear-gradient(145deg, #070a12 0%, #0e1628 45%, #0a1120 100%);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --card-bg: rgba(255, 255, 255, 0.045);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-hover: rgba(255, 255, 255, 0.08);
-      --shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
-      --accent: #6366f1;
-      --emerald: #10b981;
-      --amber: #f59e0b;
-      --sky: #38bdf8;
-    }
-
-    [data-theme="light"] {
-      --bg-gradient: linear-gradient(145deg, #f8fafc 0%, #eef2f6 50%, #f1f5f9 100%);
+      --bg-gradient: linear-gradient(145deg, #f8fafc 0%, #edf2f7 50%, #f1f5f9 100%);
       --text-main: #0f172a;
       --text-muted: #64748b;
-      --card-bg: rgba(255, 255, 255, 0.92);
-      --card-border: rgba(226, 232, 240, 0.9);
+      --card-bg: rgba(255, 255, 255, 0.94);
+      --card-border: rgba(226, 232, 240, 0.95);
       --card-hover: #ffffff;
       --shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
       --accent: #4f46e5;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --sky: #0284c7;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -484,9 +473,9 @@
       <span class="pulse-dot"></span>
       <span id="liveTime">00:00:00 น.</span>
     </div>
-    <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยนธีม">
-      <span id="themeIcon">☀️</span> <span id="themeLabel">สลับโหมด</span>
-    </button>
+    <div class="live-clock-badge" id="topDateBadge" style="background:#ffffff; color:#0f172a; border-color:rgba(226,232,240,0.9);">
+      <span>📅</span> <span id="topDateText">--/--/----</span>
+    </div>
   </div>
 
   <!-- Header & Company Branding -->
@@ -670,12 +659,19 @@
 <script>
   let deferredPrompt = null;
 
-  // Live Clock Updater
+  // Live Clock & Date Updater
   function updateLiveClock() {
     const now = new Date();
     const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const clockEl = document.getElementById('liveTime');
     if (clockEl) clockEl.innerText = timeStr + ' น.';
+    const dateEl = document.getElementById('topDateText');
+    if (dateEl) {
+      const d = String(now.getDate()).padStart(2, '0');
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const y = now.getFullYear();
+      dateEl.innerText = `${d}/${m}/${y}`;
+    }
   }
   setInterval(updateLiveClock, 1000);
   updateLiveClock();
@@ -687,7 +683,7 @@
     const guideAndroid = document.getElementById('guideAndroid');
 
     if (platform === 'ios') {
-      tabIos.style.background = '#6366f1';
+      tabIos.style.background = '#4f46e5';
       tabIos.style.color = '#ffffff';
       tabAndroid.style.background = 'transparent';
       tabAndroid.style.color = 'var(--text-muted)';
@@ -743,31 +739,10 @@
     });
   }
 
-  // Theme Toggle Logic
+  // Light Mode Only Enforcer
   function initTheme() {
-    const saved = localStorage.getItem('app_theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
-    updateThemeButton(saved);
-  }
-
-  function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('app_theme', next);
-    updateThemeButton(next);
-  }
-
-  function updateThemeButton(theme) {
-    const icon = document.getElementById('themeIcon');
-    const label = document.getElementById('themeLabel');
-    if (theme === 'light') {
-      icon.innerText = '🌙';
-      label.innerText = 'โหมดมืด';
-    } else {
-      icon.innerText = '☀️';
-      label.innerText = 'โหมดสว่าง';
-    }
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('app_theme', 'light');
   }
 
   // Load Custom Company Branding and Shift Times
