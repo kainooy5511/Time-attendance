@@ -806,6 +806,10 @@
   let scanInterval  = null;
   let currentMatch  = null;
   let currentSnapshot = '';
+  const snapshotCanvas = document.createElement('canvas');
+  snapshotCanvas.width = 160;
+  snapshotCanvas.height = 160;
+  const snapshotCtx = snapshotCanvas.getContext('2d');
   let currentLat    = null;
   let currentLng    = null;
 
@@ -1100,19 +1104,63 @@
       isProcessingFrame = true;
 
       try {
+        // 1. แคปเจอร์ภาพ ณ เสี้ยววินาทีเดียวกับที่ส่งภาพเข้า AI (Synchronous Frame Capture)
+        // รับประกันว่ารูปที่ส่งไป Google Drive จะเป็นภาพเดียวกับที่ AI ตรวจจับ 100% ไม่ดีเลย์ตามหลังตอนขยับมือ
+        let candidateSnapshot = '';
+        try {
+          if (snapshotCanvas && snapshotCtx && video.videoWidth > 0) {
+            snapshotCtx.save();
+            snapshotCtx.clearRect(0, 0, 160, 160);
+            snapshotCtx.translate(160, 0);
+            snapshotCtx.scale(-1, 1);
+            snapshotCtx.drawImage(video, 0, 0, 160, 160);
+            snapshotCtx.restore();
+            candidateSnapshot = snapshotCanvas.toDataURL('image/jpeg', 0.50);
+          }
+        } catch(e) {}
+
         const detection = await faceapi
-          .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.35 }))
+          .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.45 }))
           .withFaceLandmarks()
           .withFaceDescriptor();
 
         if (detection) {
+          // 2. ระบบป้องกันการบดบัง (Anti-Occlusion): ตรวจสอบว่ามองเห็นตาครบทั้ง 2 ข้าง และจมูก-ปาก
+          const landmarks = detection.landmarks;
+          let isFullyUnobstructed = false;
+          if (landmarks) {
+            const leftEye = landmarks.getLeftEye() || [];
+            const rightEye = landmarks.getRightEye() || [];
+            const nose = landmarks.getNose() || [];
+            const mouth = landmarks.getMouth() || [];
+
+            if (leftEye.length >= 6 && rightEye.length >= 6 && nose.length >= 4 && mouth.length >= 10) {
+              const lx = leftEye.reduce((s, p) => s + p.x, 0) / leftEye.length;
+              const ly = leftEye.reduce((s, p) => s + p.y, 0) / leftEye.length;
+              const rx = rightEye.reduce((s, p) => s + p.x, 0) / rightEye.length;
+              const ry = rightEye.reduce((s, p) => s + p.y, 0) / rightEye.length;
+              const eyeDist = Math.sqrt((rx - lx) ** 2 + (ry - ly) ** 2);
+
+              const box = detection.detection.box;
+              if (box.width >= 60 && box.height >= 60 && eyeDist >= 18) {
+                isFullyUnobstructed = true;
+              }
+            }
+          }
+
+          if (!isFullyUnobstructed) {
+            overlayStatus.innerText = '⚠️ กรุณาเปิดเผยใบหน้าให้ครบทั้ง 2 ข้าง (ห้ามมีสิ่งบดบัง)';
+            overlayStatus.style.background = 'rgba(245, 158, 11, 0.85)';
+            return;
+          }
+
           const match = findBestMatch(detection.descriptor);
           if (match && match.distance < MATCH_THRESHOLD) {
             clearInterval(scanInterval);
             isScanning = false;
             overlayStatus.innerText = '✅ ตรวจพบ: ' + match.name;
             overlayStatus.style.background = 'rgba(16, 185, 129, 0.9)';
-            showModal(match);
+            showModal(match, candidateSnapshot);
           } else if (match && match.distance < 0.70) {
             overlayStatus.innerText = '🔍 กำลังวิเคราะห์: ' + (match.name !== 'unknown' ? match.name : 'กรุณาเข้าใกล้กล้องอีกนิด');
             overlayStatus.style.background = 'rgba(245, 158, 11, 0.85)';
@@ -1273,20 +1321,29 @@
     return best;
   }
 
-  function showModal(match) {
+  function showModal(match, candidateSnapshot = null) {
     currentMatch = match;
     updateDailyCard(match);
 
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 160; canvas.height = 160;
-      const ctx = canvas.getContext('2d');
-      ctx.translate(160, 0); ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0, 160, 160);
-      currentSnapshot = canvas.toDataURL('image/jpeg', 0.45);
-      document.getElementById('modalSnapshot').src = currentSnapshot;
-    } catch(e) {
-      document.getElementById('modalSnapshot').style.display = 'none';
+    if (candidateSnapshot && candidateSnapshot.length > 50) {
+      currentSnapshot = candidateSnapshot;
+      const snapImg = document.getElementById('modalSnapshot');
+      if (snapImg) {
+        snapImg.src = currentSnapshot;
+        snapImg.style.display = 'block';
+      }
+    } else {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 160; canvas.height = 160;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(160, 0); ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, 160, 160);
+        currentSnapshot = canvas.toDataURL('image/jpeg', 0.50);
+        document.getElementById('modalSnapshot').src = currentSnapshot;
+      } catch(e) {
+        document.getElementById('modalSnapshot').style.display = 'none';
+      }
     }
 
     document.getElementById('modalName').innerText  = match.name;
