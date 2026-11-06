@@ -37,7 +37,8 @@
       --shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; transition: background 0.3s, color 0.3s, border-color 0.3s; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    button, a, input, select { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
     body {
       font-family: 'Sarabun', sans-serif;
@@ -323,27 +324,41 @@
 
   const API_URL = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
 
-  // 1. Initial Load of Users for PIN Selector
-  async function initUserList() {
+  // 1. Initial Load of Users for PIN Selector (Instant Cache + Background Network)
+  function renderUserDropdown(users) {
     const sel = document.getElementById('userSelector');
-    try {
-      const res = await fetch(API_URL + '?action=getKnownFaces');
-      registeredUsers = await res.json();
-    } catch(e) {
-      registeredUsers = [];
-    }
-
     let opts = '<option value="__admin__">👑 ผู้ดูแลระบบ (Admin)</option>';
-    registeredUsers.forEach(u => {
+    users.forEach(u => {
       opts += `<option value="${u.employeeId}">${u.name} (${u.employeeId})</option>`;
     });
     sel.innerHTML = opts;
 
-    // Auto-select last scanned user if available
     const lastId = localStorage.getItem('last_scanned_empid');
-    if (lastId && registeredUsers.some(u => u.employeeId === lastId)) {
+    if (lastId && users.some(u => u.employeeId === lastId)) {
       sel.value = lastId;
     }
+  }
+
+  async function initUserList() {
+    // โหลดแคชทันทีใน 0.001 วิ ไม่ต้องยืนรอ
+    try {
+      const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
+      if (Array.isArray(cached) && cached.length > 0) {
+        registeredUsers = cached;
+        renderUserDropdown(registeredUsers);
+      }
+    } catch(e) {}
+
+    // ดึงข้อมูลสดจากระบบหลังบ้านมาอัปเดตต่อเนื่อง
+    try {
+      const res = await fetch(API_URL + '?action=getKnownFaces');
+      const latest = await res.json();
+      if (Array.isArray(latest) && latest.length > 0) {
+        registeredUsers = latest;
+        localStorage.setItem('cached_known_faces', JSON.stringify(latest));
+        renderUserDropdown(registeredUsers);
+      }
+    } catch(e) {}
   }
 
   // 2. Verify PIN

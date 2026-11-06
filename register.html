@@ -34,7 +34,8 @@
       --accent: #4f46e5;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; transition: background 0.3s, color 0.3s, border-color 0.3s; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    button, a, input, select { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
     body {
       font-family: 'Sarabun', sans-serif;
@@ -384,7 +385,23 @@
         msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนสำเร็จเรียบร้อย! (สิทธิ์: ' + role + ' | PIN: ' + pin + ')</span>';
         btnSave.innerHTML = '✅ ลงทะเบียนสำเร็จ';
         btnSave.disabled = true;
-        setTimeout(() => { window.location.href = 'index.html'; }, 2500);
+
+        // บันทึกลงแคชทันทีเพื่อให้หน้าสแกนตรวจจับใบหน้าได้ทันทีโดยไม่ต้องรอรอบซิงก์
+        try {
+          const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
+          cached.push({
+            name: name,
+            label: name,
+            employeeId: empId,
+            department: dept,
+            role: role,
+            pin: pin,
+            descriptor: descriptorArray
+          });
+          localStorage.setItem('cached_known_faces', JSON.stringify(cached));
+        } catch(e) {}
+
+        setTimeout(() => { window.location.href = 'index.html'; }, 2000);
       } else {
         msgDiv.innerHTML = '<span class="msg-success">✅ บันทึกมุมที่ ' + saveCounter + ' สำเร็จ! กรุณาเอียงหน้าเล็กน้อยแล้วกดอีกครั้ง</span>';
         btnSave.disabled = false;
