@@ -759,8 +759,10 @@
   const gpsAlertBox    = document.getElementById('gps-alert-box');
   const btnStart       = document.getElementById('btnStart');
 
-  // เกณฑ์ระยะห่างใบหน้า (0.58 มาตรฐานสากล แม่นยำ ว่องไว)
-  const MATCH_THRESHOLD = 0.58;
+  // เกณฑ์ระยะห่างใบหน้าระดับเข้มงวด (Strict Enterprise Biometrics)
+  // ค่า <= 0.45 = ยืนยันว่าเป็นบุคคลเดียวกันอย่างแท้จริง หากระยะห่างเกิน 0.45 จะถือว่า "ไม่ผ่าน" ทันที ไม่มีการเดาสุ่มเข้ากับหน้าที่ใกล้เคียงที่สุด
+  const MATCH_THRESHOLD = 0.45;
+  const REQUIRED_CONSECUTIVE_FRAMES = 2; // ต้องตรวจจับตรงกันต่อเนื่อง 2 เฟรมติดกัน (~400ms) เพื่อความมั่นใจและป้องกันการสแกนผิดพลาด 100%
 
   function parseWorkStartTime(val) {
     if (!val) return '08:00';
@@ -821,6 +823,10 @@
   let resolvedType    = 'เข้างาน (Check-In)';
   let resolvedStatus  = 'ตรงเวลา';
   let resolvedOtHours = 0;
+
+  // ตัวแปรสำหรับระบบยืนยันตัวตนต่อเนื่อง (Multi-Frame Temporal Confirmation)
+  let consecutiveMatchCount = 0;
+  let candidateMatchId = null;
 
   function haversineKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
@@ -1150,26 +1156,43 @@
           }
 
           if (!isFullyUnobstructed) {
+            consecutiveMatchCount = 0;
+            candidateMatchId = null;
             overlayStatus.innerText = '⚠️ กรุณาเปิดเผยใบหน้าให้ครบทั้ง 2 ข้าง (ห้ามมีสิ่งบดบัง)';
             overlayStatus.style.background = 'rgba(245, 158, 11, 0.85)';
             return;
           }
 
           const match = findBestMatch(detection.descriptor);
-          if (match && match.distance < MATCH_THRESHOLD) {
-            clearInterval(scanInterval);
-            isScanning = false;
-            overlayStatus.innerText = '✅ ตรวจพบ: ' + match.name;
-            overlayStatus.style.background = 'rgba(16, 185, 129, 0.9)';
-            showModal(match, candidateSnapshot);
-          } else if (match && match.distance < 0.70) {
-            overlayStatus.innerText = '🔍 กำลังวิเคราะห์: ' + (match.name !== 'unknown' ? match.name : 'กรุณาเข้าใกล้กล้องอีกนิด');
-            overlayStatus.style.background = 'rgba(245, 158, 11, 0.85)';
+          if (match && match.isMatched && match.distance <= MATCH_THRESHOLD) {
+            // ยืนยันว่าเป็นบุคคลเดียวกันต่อเนื่องอย่างน้อย 2 เฟรมติด
+            if (candidateMatchId === match.employeeId) {
+              consecutiveMatchCount++;
+            } else {
+              candidateMatchId = match.employeeId;
+              consecutiveMatchCount = 1;
+            }
+
+            if (consecutiveMatchCount >= REQUIRED_CONSECUTIVE_FRAMES) {
+              clearInterval(scanInterval);
+              isScanning = false;
+              overlayStatus.innerText = '✅ ตรวจพบ: ' + match.name;
+              overlayStatus.style.background = 'rgba(16, 185, 129, 0.9)';
+              showModal(match, candidateSnapshot);
+            } else {
+              overlayStatus.innerText = '🔍 กำลังยืนยันตัวตน... ' + match.name + ' (' + consecutiveMatchCount + '/' + REQUIRED_CONSECUTIVE_FRAMES + ')';
+              overlayStatus.style.background = 'rgba(16, 185, 129, 0.85)';
+            }
           } else {
-            overlayStatus.innerText = '👤 ตรวจพบใบหน้า แต่ไม่พบในระบบ';
+            // ใบหน้านี้ไม่ตรงกับข้อมูลพนักงานคนใดที่บันทึกไว้ในระบบ (สแกนไม่ผ่านเด็ดขาด ไม่มีการจับเข้ากับคนอื่น)
+            consecutiveMatchCount = 0;
+            candidateMatchId = null;
+            overlayStatus.innerText = '❌ ใบหน้านี้ยังไม่ได้ลงทะเบียนในระบบ (สแกนไม่ผ่าน)';
             overlayStatus.style.background = 'rgba(239, 68, 68, 0.85)';
           }
         } else {
+          consecutiveMatchCount = 0;
+          candidateMatchId = null;
           overlayStatus.innerText = '📷 กรุณามองตรงเข้ากล้อง';
           overlayStatus.style.background = 'rgba(0,0,0,0.6)';
         }
@@ -1299,27 +1322,43 @@
   }
 
   function findBestMatch(queryDesc) {
-    let best = { name: 'unknown', distance: 1.0 };
-    if (!queryDesc || queryDesc.length !== 128) return best;
+    let best = { name: 'unknown', distance: 1.0, isMatched: false };
+    if (!queryDesc || queryDesc.length !== 128 || !knownFaces || knownFaces.length === 0) return best;
+
+    let minDistance = 1.0;
+    let matchedUser = null;
 
     knownFaces.forEach(u => {
       if (!u.descriptor || u.descriptor.length !== 128) return;
       try {
         const d = faceapi.euclideanDistance(queryDesc, u.descriptor);
-        if (!isNaN(d) && d < best.distance) {
-          best = {
-            name: u.name,
-            employeeId: u.employeeId,
-            department: u.department,
-            role: u.role,
-            distance: d
-          };
+        if (!isNaN(d) && d < minDistance) {
+          minDistance = d;
+          matchedUser = u;
         }
       } catch(e) {
         console.warn('Distance error on', u.name, e);
       }
     });
-    return best;
+
+    // มาตรการป้องกันเด็ดขาด: หากระยะห่างเกินเกณฑ์เข้มงวด (distance > MATCH_THRESHOLD)
+    // ถือเป็นบุคคลนิรนามที่ไม่ผ่านการรับรองทันที (isMatched = false) ห้ามส่งชื่อพนักงานออกไปเด็ดขาด!
+    if (matchedUser && minDistance <= MATCH_THRESHOLD) {
+      return {
+        name: matchedUser.name,
+        employeeId: matchedUser.employeeId,
+        department: matchedUser.department,
+        role: matchedUser.role,
+        distance: minDistance,
+        isMatched: true
+      };
+    }
+
+    return {
+      name: 'unknown',
+      distance: minDistance,
+      isMatched: false
+    };
   }
 
   function showModal(match, candidateSnapshot = null) {
@@ -1534,6 +1573,8 @@
     }
     currentMatch = null;
     isScanning = false;
+    consecutiveMatchCount = 0;
+    candidateMatchId = null;
     checkAndStartAutoScan(); // กลับมาเริ่มสแกนอัตโนมัติสำหรับคนต่อไปทันที
   }
 
@@ -1541,6 +1582,8 @@
     confirmModal.style.display = 'none';
     currentMatch = null;
     isScanning = false;
+    consecutiveMatchCount = 0;
+    candidateMatchId = null;
     checkAndStartAutoScan();
   }
 
