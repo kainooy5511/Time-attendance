@@ -759,9 +759,9 @@
   const gpsAlertBox    = document.getElementById('gps-alert-box');
   const btnStart       = document.getElementById('btnStart');
 
-  // เกณฑ์ระยะห่างใบหน้าระดับเข้มงวด (Strict Enterprise Biometrics)
-  // ค่า <= 0.45 = ยืนยันว่าเป็นบุคคลเดียวกันอย่างแท้จริง หากระยะห่างเกิน 0.45 จะถือว่า "ไม่ผ่าน" ทันที ไม่มีการเดาสุ่มเข้ากับหน้าที่ใกล้เคียงที่สุด
-  const MATCH_THRESHOLD = 0.45;
+  // เกณฑ์ระยะห่างใบหน้าระดับเข้มงวดสูงสุด (Strict Enterprise Biometrics - Zero False Acceptance)
+  // ค่า <= 0.42 = ยืนยันว่าเป็นบุคคลเดียวกันอย่างแท้จริง หากระยะห่างเกิน 0.42 จะถือว่า "ไม่ผ่าน" ทันที ไม่มีการเดาสุ่มเข้ากับหน้าที่ใกล้เคียงที่สุด
+  const MATCH_THRESHOLD = 0.42;
   const REQUIRED_CONSECUTIVE_FRAMES = 2; // ต้องตรวจจับตรงกันต่อเนื่อง 2 เฟรมติดกัน (~400ms) เพื่อความมั่นใจและป้องกันการสแกนผิดพลาด 100%
 
   function parseWorkStartTime(val) {
@@ -839,20 +839,60 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
+  // ระบบทำความสะอาดและตรวจสอบคุณภาพ Vector ใบหน้า (Outlier Rejection)
+  // หากมุมใดที่ลงทะเบียนไว้มีระยะห่างเกิน 0.50 เมื่อเทียบกับมุมอื่นของพนักงานคนเดียวกัน จะถูกตัดออกทันทีเพื่อป้องกัน Vector เสีย
+  function sanitizeKnownFaces(rawList) {
+    if (!Array.isArray(rawList)) return [];
+    const valid = rawList
+      .filter(u => u && u.name !== 'แอดมิน สมศักดิ์' && u.employeeId !== 'EMP001' && u.descriptor && (u.descriptor.length === 128 || (Array.isArray(u.descriptor) && u.descriptor.length === 128)))
+      .map(u => ({
+        name: String(u.name || u.label || '').trim(),
+        employeeId: String(u.employeeId || 'EMP').trim(),
+        department: String(u.department || 'ทั่วไป').trim(),
+        role: String(u.role || 'พนักงานทั่วไป').trim(),
+        descriptor: new Float32Array(u.descriptor)
+      }));
+
+    const byEmp = {};
+    valid.forEach(u => {
+      const k = (u.employeeId || u.name).toUpperCase();
+      if (!byEmp[k]) byEmp[k] = [];
+      byEmp[k].push(u);
+    });
+
+    const cleaned = [];
+    Object.keys(byEmp).forEach(k => {
+      const list = byEmp[k];
+      if (list.length <= 1) {
+        cleaned.push(...list);
+        return;
+      }
+      list.forEach((target, idx) => {
+        let minD = 1.0;
+        for (let i = 0; i < list.length; i++) {
+          if (i === idx) continue;
+          let s = 0;
+          for (let j = 0; j < 128; j++) s += (target.descriptor[j] - list[i].descriptor[j]) ** 2;
+          const d = Math.sqrt(s);
+          if (d < minD) minD = d;
+        }
+        if (minD <= 0.50) {
+          cleaned.push(target);
+        } else {
+          console.warn('Dropped corrupted angle vector for', target.name, 'min distance to other angles:', minD);
+        }
+      });
+    });
+
+    return cleaned;
+  }
+
   // 1. Initial State: โหลดแคชเดิมทันทีใน 0.001 วิ (Zero-Wait)
   function initCachedFaces() {
     try {
       const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
       if (Array.isArray(cached) && cached.length > 0) {
-        knownFaces = cached
-          .filter(u => u && u.name !== 'แอดมิน สมศักดิ์' && u.employeeId !== 'EMP001' && u.descriptor && (u.descriptor.length === 128 || (Array.isArray(u.descriptor) && u.descriptor.length === 128)))
-          .map(u => ({
-            name: String(u.name || u.label || '').trim(),
-            employeeId: String(u.employeeId || 'EMP').trim(),
-            department: String(u.department || 'ทั่วไป').trim(),
-            role: String(u.role || 'พนักงานทั่วไป').trim(),
-            descriptor: new Float32Array(u.descriptor)
-          }));
+        knownFaces = sanitizeKnownFaces(cached);
       }
     } catch(e) {}
   }
@@ -1062,15 +1102,7 @@
 
       if (Array.isArray(usersRes) && usersRes.length > 0) {
         localStorage.setItem('cached_known_faces', JSON.stringify(usersRes));
-        knownFaces = usersRes
-          .filter(u => u && u.name !== 'แอดมิน สมศักดิ์' && u.employeeId !== 'EMP001' && u.descriptor && (u.descriptor.length === 128 || (Array.isArray(u.descriptor) && u.descriptor.length === 128)))
-          .map(u => ({
-            name: String(u.name || u.label || '').trim(),
-            employeeId: String(u.employeeId || 'EMP').trim(),
-            department: String(u.department || 'ทั่วไป').trim(),
-            role: String(u.role || 'พนักงานทั่วไป').trim(),
-            descriptor: new Float32Array(u.descriptor)
-          }));
+        knownFaces = sanitizeKnownFaces(usersRes);
       }
 
       const serverToday = (attRes || []).filter(item => isSameDateAsToday(item.date));
@@ -1126,10 +1158,41 @@
           }
         } catch(e) {}
 
-        const detection = await faceapi
-          .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.45 }))
+        // 1. ตรวจจับใบหน้าทั้งหมดในภาพ (Multi-Face Detection เพื่อตรวจจับการยืนซ้อน/โผล่เข้ามาหลายคน)
+        const detections = await faceapi
+          .detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.50 }))
           .withFaceLandmarks()
-          .withFaceDescriptor();
+          .withFaceDescriptors();
+
+        if (!detections || detections.length === 0) {
+          consecutiveMatchCount = 0;
+          candidateMatchId = null;
+          overlayStatus.innerText = '📷 กรุณามองตรงเข้ากล้อง';
+          overlayStatus.style.background = 'rgba(0,0,0,0.6)';
+          return;
+        }
+
+        // มาตรการป้องกันเด็ดขาด 1: ป้องกันการสแกนซ้อน / บุคคลที่สองยื่นหน้าเข้ามาในเฟรม
+        // หากมีคนในกล้องมากกว่า 1 คน จะบล็อกการลงเวลาทันที 100% จนกว่าจะเหลือพนักงานคนเดียว
+        if (detections.length > 1) {
+          consecutiveMatchCount = 0;
+          candidateMatchId = null;
+          overlayStatus.innerText = `⚠️ ตรวจพบ ${detections.length} คนในกล้อง! กรุณาเข้าหน้ากล้องทีละ 1 คน`;
+          overlayStatus.style.background = 'rgba(239, 68, 68, 0.9)';
+          return;
+        }
+
+        const detection = detections[0];
+
+        // มาตรการป้องกันเด็ดขาด 2: ตรวจสอบขนาดใบหน้า (ต้องอยู่ใกล้พอและไม่ใช่คนเดินผ่านด้านหลัง)
+        const box = detection.detection.box;
+        if (box.width < 75 || box.height < 75) {
+          consecutiveMatchCount = 0;
+          candidateMatchId = null;
+          overlayStatus.innerText = '🔍 กรุณาขยับเข้าใกล้กล้องอีกนิด';
+          overlayStatus.style.background = 'rgba(245, 158, 11, 0.85)';
+          return;
+        }
 
         if (detection) {
           // 2. ระบบป้องกันการบดบัง (Anti-Occlusion): ตรวจสอบว่ามองเห็นตาครบทั้ง 2 ข้าง และจมูก-ปาก
@@ -1148,7 +1211,6 @@
               const ry = rightEye.reduce((s, p) => s + p.y, 0) / rightEye.length;
               const eyeDist = Math.sqrt((rx - lx) ** 2 + (ry - ly) ** 2);
 
-              const box = detection.detection.box;
               if (box.width >= 60 && box.height >= 60 && eyeDist >= 18) {
                 isFullyUnobstructed = true;
               }
@@ -1190,11 +1252,6 @@
             overlayStatus.innerText = '❌ ใบหน้านี้ยังไม่ได้ลงทะเบียนในระบบ (สแกนไม่ผ่าน)';
             overlayStatus.style.background = 'rgba(239, 68, 68, 0.85)';
           }
-        } else {
-          consecutiveMatchCount = 0;
-          candidateMatchId = null;
-          overlayStatus.innerText = '📷 กรุณามองตรงเข้ากล้อง';
-          overlayStatus.style.background = 'rgba(0,0,0,0.6)';
         }
       } catch(err) {
         console.warn('Scan frame error:', err);

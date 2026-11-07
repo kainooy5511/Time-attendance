@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V10 - Strict Biometrics & Multi-Frame Confirmation)
-const CACHE_NAME = 'attendance-pwa-v10';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V11 - Multi-Face Intrusion Blocker & Vector Outlier Sanitizer)
+const CACHE_NAME = 'attendance-pwa-v11';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที
