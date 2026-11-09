@@ -656,6 +656,26 @@
     return '08:00';
   }
 
+  // ฟังก์ชันแปลงตัวเลขนาทีให้อ่านเข้าใจง่าย เช่น 540 นาที -> "9 ชม.", 90 นาที -> "1 ชม. 30 นาที", 15 นาที -> "15 นาที"
+  function formatDurationMinutes(totalMin) {
+    const m = Math.round(Number(totalMin) || 0);
+    if (m <= 0) return '0 นาที';
+    if (m < 60) return `${m} นาที`;
+    const hours = Math.floor(m / 60);
+    const remMinutes = m % 60;
+    if (remMinutes === 0) {
+      return `${hours} ชม.`;
+    }
+    return `${hours} ชม. ${remMinutes} นาที`;
+  }
+
+  function humanizeMinutesInString(str) {
+    if (!str || typeof str !== 'string') return str || '';
+    return str.replace(/(\d+)\s*นาที/g, (match, p1) => {
+      return formatDurationMinutes(parseInt(p1, 10));
+    });
+  }
+
   function toSecondsOfDay(val) {
     if (!val) return -1;
     const str = formatDisplayTime(val);
@@ -698,14 +718,14 @@
         const inSec = toSecondsOfDay(checkIn.time);
         if (inSec > limitSec) {
           const diffMin = Math.floor((inSec - limitSec) / 60);
-          statusParts.push(`สาย (${diffMin} นาที)`);
+          statusParts.push(`สาย (${formatDurationMinutes(diffMin)})`);
         } else if (checkIn.status && checkIn.status.includes('สาย')) {
-          statusParts.push(checkIn.status);
+          statusParts.push(humanizeMinutesInString(checkIn.status));
         }
       }
 
       if (checkOut && checkOut.status && checkOut.status.includes('ออกก่อน')) {
-        statusParts.push(checkOut.status);
+        statusParts.push(humanizeMinutesInString(checkOut.status));
       }
 
       if (!checkOut && checkIn) {
@@ -1035,7 +1055,7 @@
           </div>
           <div class="card-right">
             <span class="type-badge ${typeClass}">${typeStr}</span>
-            <span class="status-tag ${isLate ? 'late' : ''}">สถานะ: ${item.status || 'ปกติ'}</span>
+            <span class="status-tag ${isLate ? 'late' : ''}">สถานะ: ${humanizeMinutesInString(item.status || 'ปกติ')}</span>
           </div>
         </div>
       `;
@@ -1055,7 +1075,7 @@
       'ประเภท (Type)': row.type || 'เข้างาน',
       'วันที่ (Date)': formatDisplayDate(row.date),
       'เวลา (Time)': formatDisplayTime(row.time),
-      'สถานะ (Status)': row.status || 'ปกติ',
+      'สถานะ (Status)': humanizeMinutesInString(row.status || 'ปกติ'),
       'ชั่วโมง OT (OT Hours)': row.otHours || 0,
       'ละติจูด (Lat)': row.lat || '-',
       'ลองจิจูด (Lng)': row.lng || '-',

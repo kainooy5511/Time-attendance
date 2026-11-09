@@ -823,6 +823,26 @@
     const m = (parts.length >= 2 && !isNaN(parts[1])) ? parts[1] : defaultM;
     return h * 60 + m;
   }
+
+  // ฟังก์ชันแปลงตัวเลขนาทีให้อ่านเข้าใจง่าย เช่น 540 นาที -> "9 ชม.", 90 นาที -> "1 ชม. 30 นาที", 15 นาที -> "15 นาที"
+  function formatDurationMinutes(totalMin) {
+    const m = Math.round(Number(totalMin) || 0);
+    if (m <= 0) return '0 นาที';
+    if (m < 60) return `${m} นาที`;
+    const hours = Math.floor(m / 60);
+    const remMinutes = m % 60;
+    if (remMinutes === 0) {
+      return `${hours} ชม.`;
+    }
+    return `${hours} ชม. ${remMinutes} นาที`;
+  }
+
+  function humanizeMinutesInString(str) {
+    if (!str || typeof str !== 'string') return str || '';
+    return str.replace(/(\d+)\s*นาที/g, (match, p1) => {
+      return formatDurationMinutes(parseInt(p1, 10));
+    });
+  }
   let knownFaces    = [];
   let todayLogs     = [];
   let scanInterval  = null;
@@ -1327,11 +1347,11 @@
 
       if (inTotalMin <= limitTotalMin) {
         const diff = limitTotalMin - inTotalMin;
-        inStatusEl.innerText = diff > 0 ? `✅ ปกติ (ก่อนเวลา ${diff} นาที)` : `✅ ปกติ (ตรงเวลา)`;
+        inStatusEl.innerText = diff > 0 ? `✅ ปกติ (ก่อนเวลา ${formatDurationMinutes(diff)})` : `✅ ปกติ (ตรงเวลา)`;
         inStatusEl.className = 'daily-item-status status-good';
       } else {
         const lateDiff = inTotalMin - limitTotalMin;
-        inStatusEl.innerText = `⚠️ สาย ${lateDiff} นาที`;
+        inStatusEl.innerText = `⚠️ สาย ${formatDurationMinutes(lateDiff)}`;
         inStatusEl.className = 'daily-item-status status-late';
       }
     } else {
@@ -1354,7 +1374,7 @@
       if (outTotalMin < otLimitTotalMin) {
         // ออกก่อนเวลาที่กำหนด -> แจ้งเตือนสีเหลือง ผิดปกติ
         const earlyDiff = otLimitTotalMin - outTotalMin;
-        outStatusEl.innerText = `⚠️ ออกก่อนเวลา (${earlyDiff} นาที)`;
+        outStatusEl.innerText = `⚠️ ออกก่อนเวลา (${formatDurationMinutes(earlyDiff)})`;
         outStatusEl.className = 'daily-item-status status-early';
         if (outItemEl) outItemEl.className = 'daily-item out-item early-item';
       } else if (outTotalMin > otLimitTotalMin) {
@@ -1531,7 +1551,7 @@
 
       if (currentTotalMin > limitTotalMin) {
         const diff = currentTotalMin - limitTotalMin;
-        resolvedStatus = 'สาย (' + diff + ' นาที)';
+        resolvedStatus = 'สาย (' + formatDurationMinutes(diff) + ')';
         statusBadge.innerText = resolvedStatus;
         statusBadge.style.color = '#f87171';
       } else {
@@ -1551,7 +1571,7 @@
       if (currentTotalMin < otStartTotalMin) {
         // ออกก่อนเวลาที่กำหนด -> แจ้งเตือนสีเหลือง ผิดปกติ
         const earlyDiff = otStartTotalMin - currentTotalMin;
-        resolvedStatus = 'ออกก่อนกำหนด (' + earlyDiff + ' นาที)';
+        resolvedStatus = 'ออกก่อนกำหนด (' + formatDurationMinutes(earlyDiff) + ')';
         statusBadge.innerText = '⚠️ ' + resolvedStatus;
         statusBadge.style.color = '#fbbf24';
         resolvedOtHours = 0;
