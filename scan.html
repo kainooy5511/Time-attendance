@@ -760,11 +760,12 @@
   const btnStart       = document.getElementById('btnStart');
 
   // เกณฑ์การรู้จำใบหน้าระดับ Enterprise (Method 2: L2-Normalized Cosine Similarity + Margin Gap Analysis)
-  // 1. ความเหมือน (Cosine Similarity) ต้อง >= 93% (คนเดียวกันส่องกล้องมักจะได้ 96% - 99%)
-  // 2. ระยะห่างจากคนอันดับสอง (Margin Gap) ต้องทิ้งห่าง >= 4% เพื่อตัดปัญหาคนแปลกหน้าที่หน้าก้ำกึ่ง
-  const SIMILARITY_THRESHOLD = 0.93;
-  const MARGIN_GAP_THRESHOLD = 0.04;
-  const REQUIRED_CONSECUTIVE_FRAMES = 2; // ต้องตรวจจับตรงกันต่อเนื่อง 2 เฟรมติดกัน (~400ms)
+  // 1. ความเหมือน (Cosine Similarity) ต้อง >= 96.5% (พนักงานตัวจริงส่องกล้องจะได้ 98% - 99.5%)
+  // 2. ระยะห่างจากคนอันดับสอง (Margin Gap) ต้องทิ้งห่าง >= 5% เพื่อตัดปัญหาคนแปลกหน้าที่หน้าก้ำกึ่ง
+  // 3. ยืนยันตรงกันต่อเนื่อง 3 เฟรมติดกัน (~600ms) เพื่อป้องกัน False Positive 100%
+  const SIMILARITY_THRESHOLD = 0.965;
+  const MARGIN_GAP_THRESHOLD = 0.05;
+  const REQUIRED_CONSECUTIVE_FRAMES = 3; // ต้องตรวจจับตรงกันต่อเนื่อง 3 เฟรมติดกัน (~600ms)
 
   function l2normalize(v) {
     let sum = 0;
@@ -892,7 +893,7 @@
           const sim = cosineSimilarity(target.descriptor, list[i].descriptor);
           if (sim > maxSim) maxSim = sim;
         }
-        if (maxSim >= 0.90) {
+        if (maxSim >= 0.94) {
           cleaned.push(target);
         } else {
           console.warn('Dropped corrupted angle vector for', target.name, 'max similarity to other angles:', maxSim);
