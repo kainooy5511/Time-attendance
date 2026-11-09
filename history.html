@@ -660,6 +660,7 @@
   let allRecords = [];
   let currentFiltered = [];
   let currentLoggedInUser = null; // null if employee, or user object / admin
+  let isCurrentSessionAdmin = false; // สิทธิ์ Admin เฉพาะผู้ที่ปลดล็อกผ่าน __admin__ เท่านั้น
   let adminMasterPin = localStorage.getItem('admin_pin') || '1234';
 
   const thaiMonthNames = [
@@ -850,8 +851,9 @@
     errorEl.style.display = 'none';
 
     if (selectedId === '__admin__') {
-      // Admin Authentication
+      // Admin Authentication: สิทธิ์ Admin ที่สามารถแก้ไข/ลบข้อมูลได้
       if (pin === adminMasterPin || pin === '1234' || pin === '1122') {
+        isCurrentSessionAdmin = true;
         currentLoggedInUser = { role: 'Admin', name: 'ผู้ดูแลระบบ' };
         unlockView('admin');
       } else {
@@ -859,13 +861,14 @@
         errorEl.style.display = 'block';
       }
     } else {
-      // Employee Authentication
+      // Employee Authentication: พนักงานทั่วไป ไม่มีสิทธิ์แก้ไขหรือลบเด็ดขาด
+      isCurrentSessionAdmin = false;
       const emp = registeredUsers.find(u => u.employeeId === selectedId);
       const correctPin = emp ? String(emp.pin || '').replace(/'/g, '') : '';
 
       // พนักงานต้องใส่ PIN 4 หลักของตัวเอง (หรือ Master Admin PIN)
       if ((correctPin && pin === correctPin) || pin === adminMasterPin || pin === '1234' || pin === '1122') {
-        currentLoggedInUser = emp || { name: 'พนักงาน', employeeId: selectedId, role: 'พนักงานทั่วไป' };
+        currentLoggedInUser = emp ? { ...emp, role: 'พนักงานทั่วไป' } : { name: 'พนักงาน', employeeId: selectedId, role: 'พนักงานทั่วไป' };
         unlockView('employee');
       } else {
         errorEl.innerText = '❌ รหัส PIN 4 หลักของพนักงานไม่ถูกต้อง';
@@ -879,16 +882,18 @@
     document.getElementById('historyContent').style.display = 'block';
 
     if (role === 'admin') {
-      document.getElementById('currentRoleBadge').innerText = '👑 ผู้ดูแลระบบ (Admin View)';
+      isCurrentSessionAdmin = true;
+      document.getElementById('currentRoleBadge').innerText = '👑 ผู้ดูแลระบบ (Admin View - สิทธิ์แก้ไข/ลบ)';
       document.getElementById('viewTitle').innerText = '📊 รายงานการลงเวลาและสรุปผล';
-      document.getElementById('viewSubtitle').innerText = 'ตรวจสอบพนักงานทุกคน กรองตามเดือน และดาวน์โหลดไฟล์ Excel';
+      document.getElementById('viewSubtitle').innerText = 'ตรวจสอบพนักงานทุกคน กรองตามเดือน แก้ไข/ลบข้อมูล และดาวน์โหลดไฟล์ Excel';
       document.getElementById('adminPanel').style.display = 'block';
       const empPanel = document.getElementById('employeePanel');
       if (empPanel) empPanel.style.display = 'none';
     } else {
+      isCurrentSessionAdmin = false;
       document.getElementById('currentRoleBadge').innerText = `👤 ${currentLoggedInUser.name} (${currentLoggedInUser.employeeId || 'Staff'})`;
       document.getElementById('viewTitle').innerText = '📋 ประวัติการลงเวลาของฉัน';
-      document.getElementById('viewSubtitle').innerText = 'แสดงรายการตอกบัตรเข้า-ออกงาน และดาวน์โหลดใบบันทึกเวลาเซ็นอนุมัติ';
+      document.getElementById('viewSubtitle').innerText = 'แสดงรายการตอกบัตรเข้า-ออกงาน และดาวน์โหลดใบบันทึกเวลาเซ็นอนุมัติ (ดูข้อมูลอย่างเดียว)';
       document.getElementById('adminPanel').style.display = 'none';
       const empPanel = document.getElementById('employeePanel');
       if (empPanel) empPanel.style.display = 'block';
@@ -1076,7 +1081,7 @@
       return;
     }
 
-    const isAdmin = (currentLoggedInUser && currentLoggedInUser.role === 'Admin');
+    const isAdmin = (isCurrentSessionAdmin === true);
 
     listEl.innerHTML = items.map((item, idx) => {
       const typeStr = item.type || 'เข้างาน (Check-In)';
@@ -1135,6 +1140,11 @@
   let editingLogIndex = -1;
 
   function openEditLogModal(idx) {
+    if (!isCurrentSessionAdmin) {
+      alert('🚫 สิทธิ์ไม่เพียงพอ: เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถแก้ไขข้อมูลการลงเวลาได้');
+      return;
+    }
+
     const item = currentFiltered[idx];
     if (!item) return;
     editingLogIndex = idx;
@@ -1147,6 +1157,8 @@
     document.getElementById('editTypeInput').value = (item.type && item.type.includes('ออก')) ? 'ออกงาน (Check-Out)' : 'เข้างาน (Check-In)';
     document.getElementById('editStatusInput').value = item.status || 'ตรงเวลา';
     document.getElementById('editOtInput').value = item.otHours || 0;
+    const pinInput = document.getElementById('editAdminPinConfirm');
+    if (pinInput) pinInput.value = '';
 
     const modal = document.getElementById('editLogModal');
     if (modal) modal.style.display = 'flex';
@@ -1159,6 +1171,11 @@
   }
 
   async function saveEditLog() {
+    if (!isCurrentSessionAdmin) {
+      alert('🚫 สิทธิ์ไม่เพียงพอ: เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถแก้ไขข้อมูลการลงเวลาได้');
+      return;
+    }
+
     if (editingLogIndex < 0 || !currentFiltered[editingLogIndex]) return;
     const item = currentFiltered[editingLogIndex];
     const originalTime = item.time;
@@ -1167,8 +1184,15 @@
     const newType = document.getElementById('editTypeInput').value;
     const newStatus = document.getElementById('editStatusInput').value.trim();
     const newOtHours = parseFloat(document.getElementById('editOtInput').value) || 0;
+    const adminPinConfirm = (document.getElementById('editAdminPinConfirm') ? document.getElementById('editAdminPinConfirm').value : '').trim();
 
     if (!newTime) return alert('กรุณาระบุเวลา');
+
+    // ตรวจสอบความปลอดภัย: ต้องใส่รหัสผ่าน Admin ยืนยันทุกครั้ง
+    if (adminPinConfirm !== adminMasterPin && adminPinConfirm !== '1234' && adminPinConfirm !== '1122') {
+      alert('❌ รหัสผ่าน Admin ไม่ถูกต้อง! ระบบไม่อนุญาตให้แก้ไขข้อมูลการลงเวลา');
+      return;
+    }
 
     // 1. อัปเดตในหน่วยความจำทันที (Optimistic Update)
     item.time = newTime;
@@ -1208,11 +1232,21 @@
   }
 
   async function deleteLogItem(idx) {
+    if (!isCurrentSessionAdmin) {
+      alert('🚫 สิทธิ์ไม่เพียงพอ: เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถลบข้อมูลการลงเวลาได้');
+      return;
+    }
+
     const item = currentFiltered[idx];
     if (!item) return;
 
-    const confirmMsg = `ยืนยันการลบรายการลงเวลานี้หรือไม่?\n\nพนักงาน: ${item.name || '-'}\nวันที่: ${formatDisplayDate(item.date)}\nเวลา: ${formatDisplayTime(item.time)}\nประเภท: ${item.type || '-'}`;
-    if (!confirm(confirmMsg)) return;
+    // ยืนยันรหัสผ่าน Admin ก่อนลบเด็ดขาด ป้องกันคนอื่นกดเล่น
+    const pin = prompt(`🔐 ยืนยันสิทธิ์ Admin ก่อนลบข้อมูล\n\nพนักงาน: ${item.name || '-'}\nวันที่: ${formatDisplayDate(item.date)}\nเวลา: ${formatDisplayTime(item.time)}\nประเภท: ${item.type || '-'}\n\nกรุณากรอกรหัสผ่าน Admin เพื่อยืนยันการลบ:`);
+    if (pin === null) return; // กดยกเลิก
+    if (pin.trim() !== adminMasterPin && pin.trim() !== '1234' && pin.trim() !== '1122') {
+      alert('❌ รหัสผ่าน Admin ไม่ถูกต้อง! ระบบยกเลิกคำสั่งลบรายการเพื่อความปลอดภัย');
+      return;
+    }
 
     // 1. ลบออกจากหน่วยความจำและหน้าจอทันที (Instant Optimistic Delete)
     const targetIdxAll = allRecords.findIndex(r => r === item || (r.employeeId === item.employeeId && r.time === item.time && r.date === item.date));
@@ -1833,6 +1867,10 @@
       <div>
         <label style="font-size:0.82em; font-weight:700; color:var(--text-muted); display:block; margin-bottom:5px;">⏱️ ชั่วโมง OT</label>
         <input type="number" id="editOtInput" step="0.5" min="0" placeholder="0" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:10px; border:1px solid var(--card-border); background:#fff; color:var(--text-main); font-size:0.95em;">
+      </div>
+      <div>
+        <label style="font-size:0.82em; font-weight:700; color:#dc2626; display:block; margin-bottom:5px;">🔑 ยืนยันรหัสผ่าน Admin เพื่อบันทึกการแก้ไข</label>
+        <input type="password" id="editAdminPinConfirm" maxlength="8" placeholder="กรอกรหัส Admin (เช่น 1122 หรือ 1234)" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:10px; border:1px solid #dc2626; background:#fff; color:#dc2626; font-weight:700; font-size:1em;">
       </div>
       <div style="display:flex; gap:10px; margin-top:10px;">
         <button onclick="closeEditLogModal()" style="flex:1; padding:10px; border-radius:12px; border:1px solid var(--card-border); background:#f1f5f9; color:var(--text-muted); font-weight:700; cursor:pointer;">ยกเลิก</button>

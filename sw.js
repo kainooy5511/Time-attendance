@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V25 - Cooldown, Torch & Admin Log Manager)
-const CACHE_NAME = 'attendance-pwa-v25';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V26 - Strict Admin Only Log Manager with 2FA Pin)
+const CACHE_NAME = 'attendance-pwa-v26';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที
