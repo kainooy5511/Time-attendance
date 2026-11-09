@@ -645,6 +645,72 @@
   }
 
   const API_URL = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
+  let companyWorkStartTime = '08:30';
+
+  function toSecondsOfDay(val) {
+    if (!val) return -1;
+    const str = formatDisplayTime(val);
+    const p = str.split(':').map(Number);
+    if (p.length >= 2) {
+      return (p[0] || 0) * 3600 + (p[1] || 0) * 60 + (p[2] || 0);
+    }
+    return -1;
+  }
+
+  function getDailyAttendancePair(empLogs, targetWorkStartTime = '08:30') {
+    if (!empLogs || empLogs.length === 0) {
+      return { checkIn: null, checkOut: null, timeIn: '-', timeOut: '-', status: '-' };
+    }
+
+    const inLogs = empLogs.filter(r => (r.type || '').includes('เข้า') || (r.type || '').includes('In'));
+    const outLogs = empLogs.filter(r => (r.type || '').includes('ออก') || (r.type || '').includes('Out'));
+
+    // 1. เวลาเข้างาน (IN): ดึงเวลาสแกนเข้าครั้งแรกสุดของวัน (Earliest Check-In)
+    inLogs.sort((a, b) => toSecondsOfDay(a.time) - toSecondsOfDay(b.time));
+    const checkIn = inLogs[0] || null;
+
+    // 2. เวลาออกงาน (OUT): ดึงเวลาสแกนออกครั้งหลังสุดของวัน (Latest Check-Out)
+    outLogs.sort((a, b) => toSecondsOfDay(b.time) - toSecondsOfDay(a.time));
+    const checkOut = outLogs[0] || null;
+
+    const timeIn = checkIn ? formatDisplayTime(checkIn.time) : '-';
+    const timeOut = checkOut ? formatDisplayTime(checkOut.time) : '-';
+
+    // 3. ตรวจสอบสถานะการเข้างาน (Status) ตามเวลาเริ่มงานจริง
+    let status = '-';
+    const limitParts = (targetWorkStartTime || '08:30').split(':').map(Number);
+    const limitSec = (limitParts[0] || 8) * 3600 + (limitParts[1] || 30) * 60;
+
+    if (checkIn || checkOut) {
+      let statusParts = [];
+
+      if (checkIn) {
+        const inSec = toSecondsOfDay(checkIn.time);
+        if (inSec > limitSec) {
+          const diffMin = Math.floor((inSec - limitSec) / 60);
+          statusParts.push(`สาย (${diffMin} นาที)`);
+        } else if (checkIn.status && checkIn.status.includes('สาย')) {
+          statusParts.push(checkIn.status);
+        }
+      }
+
+      if (checkOut && checkOut.status && checkOut.status.includes('ออกก่อน')) {
+        statusParts.push(checkOut.status);
+      }
+
+      if (statusParts.length > 0) {
+        status = statusParts.join(' / ');
+      } else if (checkIn && !checkOut) {
+        status = 'เข้างานปกติ (ยังไม่ลงเวลาออก)';
+      } else if (!checkIn && checkOut) {
+        status = 'ออกงานปกติ (ขาดลงเวลาเข้า)';
+      } else {
+        status = 'ปกติ (ตรงเวลา)';
+      }
+    }
+
+    return { checkIn, checkOut, timeIn, timeOut, status };
+  }
 
   // 1. Initial Load of Users for PIN Selector (Instant Cache + Background Network)
   // รวมรายชื่อพนักงานที่สแกนใบหน้า 3 มุม (3 แถวในชีต) ให้เหลือ 1 รายชื่อต่อ 1 คน และกรองข้อมูลตัวอย่างออก
@@ -1108,34 +1174,17 @@
           return false;
         });
 
-        const checkIn = empLogs.find(r => (r.type || '').includes('เข้า') || (r.type || '').includes('In'));
-        const checkOut = empLogs.slice().reverse().find(r => (r.type || '').includes('ออก') || (r.type || '').includes('Out'));
-
-        let timeIn = checkIn ? formatDisplayTime(checkIn.time) : '-';
-        let timeOut = checkOut ? formatDisplayTime(checkOut.time) : '-';
-        let status = '-';
+        const pair = getDailyAttendancePair(empLogs, companyWorkStartTime);
+        const checkIn = pair.checkIn;
+        const checkOut = pair.checkOut;
+        let timeIn = pair.timeIn;
+        let timeOut = pair.timeOut;
+        let status = pair.status;
         let ot = (checkOut && checkOut.otHours) ? parseFloat(checkOut.otHours) || 0 : 0;
 
         if (checkIn || checkOut) {
           totalWorkDays++;
-          let statusParts = [];
-          if (checkIn && checkIn.status && checkIn.status !== 'ปกติ' && checkIn.status !== 'ตรงเวลา') {
-            statusParts.push(checkIn.status);
-            if (checkIn.status.includes('สาย')) totalLateCount++;
-          }
-          if (checkOut && checkOut.status && checkOut.status !== 'ออกงานปกติ' && checkOut.status !== 'ปกติ') {
-            statusParts.push(checkOut.status);
-          }
-
-          if (statusParts.length > 0) {
-            status = statusParts.join(' / ');
-          } else if (checkIn && !checkOut) {
-            status = (checkIn.status || 'เข้างานปกติ') + ' (ยังไม่ลงเวลาออก)';
-          } else if (!checkIn && checkOut) {
-            status = (checkOut.status || 'ออกงานปกติ') + ' (ขาดลงเวลาเข้า)';
-          } else {
-            status = 'ปกติ (ตรงเวลา)';
-          }
+          if (status.includes('สาย')) totalLateCount++;
           if (isWeekend) {
             status = `[ทำงานวันหยุด] ${status}`;
           }
@@ -1329,37 +1378,20 @@
         return false;
       });
 
-      const checkIn = empLogs.find(r => (r.type || '').includes('เข้า') || (r.type || '').includes('In'));
-      const checkOut = empLogs.slice().reverse().find(r => (r.type || '').includes('ออก') || (r.type || '').includes('Out'));
-
-      let timeIn = checkIn ? formatDisplayTime(checkIn.time) : '-';
-      let timeOut = checkOut ? formatDisplayTime(checkOut.time) : '-';
-      let status = '-';
+      const pair = getDailyAttendancePair(empLogs, companyWorkStartTime);
+      const checkIn = pair.checkIn;
+      const checkOut = pair.checkOut;
+      let timeIn = pair.timeIn;
+      let timeOut = pair.timeOut;
+      let status = pair.status;
       let ot = (checkOut && checkOut.otHours) ? parseFloat(checkOut.otHours) || 0 : 0;
       let rowClass = isWeekend ? 'weekend-row' : '';
 
       if (checkIn || checkOut) {
         totalWorkDays++;
-        let statusParts = [];
-        if (checkIn && checkIn.status && checkIn.status !== 'ปกติ' && checkIn.status !== 'ตรงเวลา') {
-          statusParts.push(checkIn.status);
-          if (checkIn.status.includes('สาย')) {
-            totalLateCount++;
-            rowClass += ' late-row';
-          }
-        }
-        if (checkOut && checkOut.status && checkOut.status !== 'ออกงานปกติ' && checkOut.status !== 'ปกติ') {
-          statusParts.push(checkOut.status);
-        }
-
-        if (statusParts.length > 0) {
-          status = statusParts.join(' / ');
-        } else if (checkIn && !checkOut) {
-          status = (checkIn.status || 'เข้างานปกติ') + ' (ยังไม่ลงเวลาออก)';
-        } else if (!checkIn && checkOut) {
-          status = (checkOut.status || 'ออกงานปกติ') + ' (ขาดลงเวลาเข้า)';
-        } else {
-          status = 'ปกติ (ตรงเวลา)';
+        if (status.includes('สาย')) {
+          totalLateCount++;
+          rowClass += ' late-row';
         }
         totalOtHours += ot;
         if (ot > 0) rowClass += ' ot-row';
@@ -1489,7 +1521,10 @@
     if (API_URL) {
       fetch(API_URL + '?action=getConfig')
         .then(r => r.json())
-        .then(cfg => { if (cfg.adminPin) adminMasterPin = cfg.adminPin; })
+        .then(cfg => {
+          if (cfg.adminPin) adminMasterPin = cfg.adminPin;
+          if (cfg.workStartTime) companyWorkStartTime = cfg.workStartTime;
+        })
         .catch(() => {});
     }
 
