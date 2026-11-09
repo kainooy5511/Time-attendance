@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V17 - Timesheet Earliest/Latest Pairing & Accurate Late Detection)
-const CACHE_NAME = 'attendance-pwa-v17';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V18 - Right-Aligned Signatures on A4 Sheet)
+const CACHE_NAME = 'attendance-pwa-v18';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที
