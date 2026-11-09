@@ -166,6 +166,18 @@ function doPost(e) {
       data.otStartTime,
       data.adminPin
     );
+  } else if (action === 'deleteAttendance') {
+    result = deleteAttendance(data.employeeId, data.date, data.time);
+  } else if (action === 'updateAttendance') {
+    result = updateAttendance(
+      data.employeeId,
+      data.date,
+      data.originalTime,
+      data.newTime,
+      data.newType,
+      data.newStatus,
+      data.newOtHours
+    );
   } else {
     result = { error: 'Unknown action: ' + action };
   }
@@ -371,6 +383,67 @@ function getAttendance() {
     }
   }
   return list.reverse();
+}
+
+// ฟังก์ชันลบรายการลงเวลา (สำหรับ Admin)
+function deleteAttendance(employeeId, date, time) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Attendance');
+  if (!sheet) return { success: false, error: 'Attendance sheet not found' };
+
+  const data = sheet.getDataRange().getValues();
+  const targetId = String(employeeId || '').trim();
+  const targetDate = String(date || '').trim();
+  const targetTime = String(time || '').trim();
+
+  for (let i = data.length - 1; i >= 1; i--) {
+    const row = data[i];
+    const rowEmpId = String(row[0] || '').trim();
+    const rowTime = String(row[4] || '').trim();
+    const rowDate = String(row[5] || '').trim();
+
+    const idMatches = (!targetId || targetId === '-' || rowEmpId === targetId);
+    const dateMatches = (rowDate.includes(targetDate) || targetDate.includes(rowDate));
+    const timeMatches = (rowTime.includes(targetTime) || targetTime.includes(rowTime) || rowTime.slice(0, 5) === targetTime.slice(0, 5));
+
+    if (idMatches && dateMatches && timeMatches) {
+      sheet.deleteRow(i + 1);
+      return { success: true, message: 'ลบรายการสำเร็จ' };
+    }
+  }
+  return { success: false, error: 'ไม่พบรายการที่ตรงกับเงื่อนไขในฐานข้อมูล' };
+}
+
+// ฟังก์ชันแก้ไขรายการลงเวลา (สำหรับ Admin)
+function updateAttendance(employeeId, date, originalTime, newTime, newType, newStatus, newOtHours) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Attendance');
+  if (!sheet) return { success: false, error: 'Attendance sheet not found' };
+
+  const data = sheet.getDataRange().getValues();
+  const targetId = String(employeeId || '').trim();
+  const targetDate = String(date || '').trim();
+  const targetTime = String(originalTime || '').trim();
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const rowEmpId = String(row[0] || '').trim();
+    const rowTime = String(row[4] || '').trim();
+    const rowDate = String(row[5] || '').trim();
+
+    const idMatches = (!targetId || targetId === '-' || rowEmpId === targetId);
+    const dateMatches = (rowDate.includes(targetDate) || targetDate.includes(rowDate));
+    const timeMatches = (rowTime.includes(targetTime) || targetTime.includes(rowTime) || rowTime.slice(0, 5) === targetTime.slice(0, 5));
+
+    if (idMatches && dateMatches && timeMatches) {
+      if (newType) sheet.getRange(i + 1, 4).setValue(newType);
+      if (newTime) sheet.getRange(i + 1, 5).setValue(newTime);
+      if (newStatus) sheet.getRange(i + 1, 7).setValue(newStatus);
+      if (newOtHours !== undefined) sheet.getRange(i + 1, 8).setValue(newOtHours);
+      return { success: true, message: 'แก้ไขรายการสำเร็จ' };
+    }
+  }
+  return { success: false, error: 'ไม่พบรายการที่ต้องการแก้ไข' };
 }
 
 // --- ส่วนจัดการ Config (GPS, เวลางาน, OT, และ Admin PIN) ---

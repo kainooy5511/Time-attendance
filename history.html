@@ -515,6 +515,39 @@
     .type-in  { background: rgba(16, 185, 129, 0.2); color: #34d399; }
     .type-out { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
+    .admin-actions-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .btn-action-edit, .btn-action-delete {
+      padding: 3px 8px;
+      border-radius: 8px;
+      font-size: 0.72em;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+    .btn-action-edit {
+      background: rgba(56, 189, 248, 0.15);
+      color: #0284c7;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .btn-action-edit:hover {
+      background: #0284c7;
+      color: white;
+    }
+    .btn-action-delete {
+      background: rgba(239, 68, 68, 0.15);
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .btn-action-delete:hover {
+      background: #dc2626;
+      color: white;
+    }
+
     .status-tag { font-size: 0.74em; font-weight: 600; color: var(--text-muted); }
     .status-tag.late { color: #f87171; font-weight: 700; }
     .map-link { font-size: 0.76em; color: #38bdf8; text-decoration: none; }
@@ -1043,7 +1076,9 @@
       return;
     }
 
-    listEl.innerHTML = items.map(item => {
+    const isAdmin = (currentLoggedInUser && currentLoggedInUser.role === 'Admin');
+
+    listEl.innerHTML = items.map((item, idx) => {
       const typeStr = item.type || 'เข้างาน (Check-In)';
       const typeClass = typeStr.includes('Check-Out') || typeStr.includes('ออกงาน') ? 'type-out' : 'type-in';
       const isLate = (item.status || '').includes('สาย');
@@ -1060,6 +1095,13 @@
 
       const mapLink = item.mapLink && item.mapLink.startsWith('http')
         ? `<a href="${item.mapLink}" target="_blank" class="map-link">📍 แผนที่ GPS</a>` : '';
+
+      const adminActions = isAdmin ? `
+        <div class="admin-actions-row">
+          <button class="btn-action-edit" onclick="openEditLogModal(${idx})" title="แก้ไขรายการ">✏️ แก้ไข</button>
+          <button class="btn-action-delete" onclick="deleteLogItem(${idx})" title="ลบรายการ">🗑️ ลบ</button>
+        </div>
+      ` : '';
 
       return `
         <div class="history-card">
@@ -1082,10 +1124,126 @@
           <div class="card-right">
             <span class="type-badge ${typeClass}">${typeStr}</span>
             <span class="status-tag ${isLate ? 'late' : ''}">สถานะ: ${humanizeMinutesInString(item.status || 'ปกติ')}</span>
+            ${adminActions}
           </div>
         </div>
       `;
     }).join('');
+  }
+
+  // --- ฟังก์ชันจัดการแก้ไขและลบ Log สำหรับแอดมิน (Admin Log Manager) ---
+  let editingLogIndex = -1;
+
+  function openEditLogModal(idx) {
+    const item = currentFiltered[idx];
+    if (!item) return;
+    editingLogIndex = idx;
+
+    const infoEl = document.getElementById('editLogInfo');
+    if (infoEl) {
+      infoEl.innerHTML = `พนักงาน: <strong>${item.name || '-'}</strong> (ID: ${item.employeeId || 'EMP'}) | วันที่: <strong>${formatDisplayDate(item.date)}</strong>`;
+    }
+    document.getElementById('editTimeInput').value = formatDisplayTime(item.time);
+    document.getElementById('editTypeInput').value = (item.type && item.type.includes('ออก')) ? 'ออกงาน (Check-Out)' : 'เข้างาน (Check-In)';
+    document.getElementById('editStatusInput').value = item.status || 'ตรงเวลา';
+    document.getElementById('editOtInput').value = item.otHours || 0;
+
+    const modal = document.getElementById('editLogModal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeEditLogModal() {
+    const modal = document.getElementById('editLogModal');
+    if (modal) modal.style.display = 'none';
+    editingLogIndex = -1;
+  }
+
+  async function saveEditLog() {
+    if (editingLogIndex < 0 || !currentFiltered[editingLogIndex]) return;
+    const item = currentFiltered[editingLogIndex];
+    const originalTime = item.time;
+
+    const newTime = document.getElementById('editTimeInput').value.trim();
+    const newType = document.getElementById('editTypeInput').value;
+    const newStatus = document.getElementById('editStatusInput').value.trim();
+    const newOtHours = parseFloat(document.getElementById('editOtInput').value) || 0;
+
+    if (!newTime) return alert('กรุณาระบุเวลา');
+
+    // 1. อัปเดตในหน่วยความจำทันที (Optimistic Update)
+    item.time = newTime;
+    item.type = newType;
+    item.status = newStatus;
+    item.otHours = newOtHours;
+
+    closeEditLogModal();
+    renderData(currentFiltered);
+
+    // 2. ส่งคำสั่งอัปเดตไปยังหลังบ้าน Google Sheets
+    try {
+      const btn = document.getElementById('btnSaveEditLog');
+      if (btn) btn.innerText = 'กำลังบันทึก...';
+
+      await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'updateAttendance',
+          employeeId: item.employeeId || '',
+          name: item.name || '',
+          date: item.date || '',
+          originalTime: originalTime,
+          newTime: newTime,
+          newType: newType,
+          newStatus: newStatus,
+          newOtHours: newOtHours
+        })
+      });
+      alert('✅ บันทึกการแก้ไขข้อมูลเรียบร้อยแล้ว');
+    } catch(err) {
+      console.warn('Backend update sync warning:', err);
+    } finally {
+      const btn = document.getElementById('btnSaveEditLog');
+      if (btn) btn.innerText = '💾 บันทึก';
+    }
+  }
+
+  async function deleteLogItem(idx) {
+    const item = currentFiltered[idx];
+    if (!item) return;
+
+    const confirmMsg = `ยืนยันการลบรายการลงเวลานี้หรือไม่?\n\nพนักงาน: ${item.name || '-'}\nวันที่: ${formatDisplayDate(item.date)}\nเวลา: ${formatDisplayTime(item.time)}\nประเภท: ${item.type || '-'}`;
+    if (!confirm(confirmMsg)) return;
+
+    // 1. ลบออกจากหน่วยความจำและหน้าจอทันที (Instant Optimistic Delete)
+    const targetIdxAll = allRecords.findIndex(r => r === item || (r.employeeId === item.employeeId && r.time === item.time && r.date === item.date));
+    if (targetIdxAll >= 0) allRecords.splice(targetIdxAll, 1);
+    currentFiltered.splice(idx, 1);
+
+    // ลบออกจาก localStorage
+    try {
+      const local = JSON.parse(localStorage.getItem('localAttendanceLogs') || '[]');
+      const filteredLocal = local.filter(r => !(r.employeeId === item.employeeId && r.time === item.time && r.date === item.date));
+      localStorage.setItem('localAttendanceLogs', JSON.stringify(filteredLocal));
+    } catch(e) {}
+
+    renderData(currentFiltered);
+
+    // 2. ส่งคำสั่งลบไปยัง Google Sheets
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'deleteAttendance',
+          employeeId: item.employeeId || '',
+          name: item.name || '',
+          date: item.date || '',
+          time: item.time || ''
+        })
+      });
+      alert('✅ ลบรายการลงเวลาเรียบร้อยแล้ว');
+    } catch(err) {
+      console.warn('Backend delete sync warning:', err);
+    }
   }
 
   function exportToExcel() {
@@ -1642,6 +1800,44 @@
   <div class="print-preview-scroll">
     <div id="printA4Sheet" class="print-a4-page">
       <!-- Dynamic A4 Timesheet Content injected here -->
+    </div>
+  </div>
+</div>
+
+<!-- Edit Log Modal for Admin -->
+<div id="editLogModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(6px); z-index:99999; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:20px; max-width:440px; width:100%; padding:22px; box-shadow:0 15px 50px rgba(0,0,0,0.4); animation:fadeInDown 0.25s ease;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h3 style="margin:0; font-size:1.15em; color:var(--text-main); font-weight:800;">✏️ แก้ไขข้อมูลการลงเวลา</h3>
+      <button onclick="closeEditLogModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.4em; cursor:pointer; padding:0 4px;">✕</button>
+    </div>
+    <div style="font-size:0.86em; color:var(--text-muted); margin-bottom:16px; padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:10px;" id="editLogInfo">
+      พนักงาน: <strong>สมชาย</strong> | วันที่: <strong>09/11/2026</strong>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label style="font-size:0.82em; font-weight:700; color:var(--text-muted); display:block; margin-bottom:5px;">🕒 เวลา (HH:mm:ss)</label>
+        <input type="text" id="editTimeInput" placeholder="เช่น 08:00:00" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:10px; border:1px solid var(--card-border); background:#fff; color:var(--text-main); font-weight:700; font-size:1em;">
+      </div>
+      <div>
+        <label style="font-size:0.82em; font-weight:700; color:var(--text-muted); display:block; margin-bottom:5px;">🏷️ ประเภทการลงเวลา</label>
+        <select id="editTypeInput" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:10px; border:1px solid var(--card-border); background:#fff; color:var(--text-main); font-size:0.95em;">
+          <option value="เข้างาน (Check-In)">🟢 เข้างาน (Check-In)</option>
+          <option value="ออกงาน (Check-Out)">🔴 ออกงาน (Check-Out)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.82em; font-weight:700; color:var(--text-muted); display:block; margin-bottom:5px;">📌 สถานะการลงเวลา</label>
+        <input type="text" id="editStatusInput" placeholder="เช่น ตรงเวลา, สาย (15 นาที)" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:10px; border:1px solid var(--card-border); background:#fff; color:var(--text-main); font-size:0.95em;">
+      </div>
+      <div>
+        <label style="font-size:0.82em; font-weight:700; color:var(--text-muted); display:block; margin-bottom:5px;">⏱️ ชั่วโมง OT</label>
+        <input type="number" id="editOtInput" step="0.5" min="0" placeholder="0" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:10px; border:1px solid var(--card-border); background:#fff; color:var(--text-main); font-size:0.95em;">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button onclick="closeEditLogModal()" style="flex:1; padding:10px; border-radius:12px; border:1px solid var(--card-border); background:#f1f5f9; color:var(--text-muted); font-weight:700; cursor:pointer;">ยกเลิก</button>
+        <button onclick="saveEditLog()" id="btnSaveEditLog" style="flex:1; padding:10px; border-radius:12px; border:none; background:linear-gradient(135deg, #10b981, #059669); color:white; font-weight:800; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.3);">💾 บันทึก</button>
+      </div>
     </div>
   </div>
 </div>

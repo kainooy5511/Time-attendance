@@ -447,6 +447,50 @@
       transform: scale(0.92);
     }
 
+    .btn-torch {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fbbf24;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.76em;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-torch:hover {
+      background: rgba(251, 191, 36, 0.2);
+      border-color: #fbbf24;
+    }
+    .btn-torch.active {
+      background: #fbbf24;
+      color: #0f172a;
+    }
+
+    .low-light-badge {
+      width: 100%;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      font-weight: 700;
+      font-size: 0.8em;
+      padding: 8px 14px;
+      border-radius: 14px;
+      margin-top: 10px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);
+      animation: fadeInDown 0.3s ease;
+    }
+
     /* Camera Error Card */
     .camera-error-card {
       width: 100%;
@@ -584,6 +628,11 @@
     <div id="overlay-status">รอเริ่มสแกน...</div>
     <video id="video" autoplay muted playsinline></video>
     <button id="btnSwitchCam" class="btn-switch-cam" onclick="switchCamera()" title="สลับกล้องหน้า/หลัง">🔄 สลับกล้อง</button>
+    <button id="btnTorch" class="btn-torch" onclick="toggleTorch()" style="display:none;" title="เปิดไฟฉาย">🔦 ไฟฉาย</button>
+  </div>
+
+  <div id="lowLightBadge" class="low-light-badge" style="display:none;">
+    💡 แสงน้อยเกินไป อาจตรวจจับใบหน้าได้ช้าลง (กรุณาเพิ่มแสงไฟหรือเปิดไฟฉาย)
   </div>
 
   <!-- Camera Controls & Error Box -->
@@ -910,6 +959,66 @@
   let consecutiveMatchCount = 0;
   let candidateMatchId = null;
 
+  // ระบบป้องกันสแกนซ้ำซ้อน (Cooldown Safeguard): ล็อกไม่ให้คนเดิมสแกนซ้ำภายใน 3 นาที ป้องกันการเผลอสแกนเข้าแล้วกล้องจับซ้ำเป็นสแกนออก
+  const COOLDOWN_MINUTES = 3;
+  const COOLDOWN_MS = COOLDOWN_MINUTES * 60 * 1000;
+
+  function checkScanCooldown(employeeId, name) {
+    const key = String(employeeId || name || '').trim().toUpperCase();
+    if (!key) return { isCooldown: false };
+    const lastScanTime = parseInt(localStorage.getItem('cooldown_' + key) || '0', 10);
+    const now = Date.now();
+    if (lastScanTime && (now - lastScanTime < COOLDOWN_MS)) {
+      const remainingSec = Math.ceil((COOLDOWN_MS - (now - lastScanTime)) / 1000);
+      const remMin = Math.floor(remainingSec / 60);
+      const remSec = remainingSec % 60;
+      const timeStr = remMin > 0 ? `${remMin} นาที ${remSec} วิ` : `${remSec} วิ`;
+      return { isCooldown: true, remainingText: timeStr };
+    }
+    return { isCooldown: false };
+  }
+
+  function setScanCooldown(employeeId, name) {
+    const key = String(employeeId || name || '').trim().toUpperCase();
+    if (!key) return;
+    localStorage.setItem('cooldown_' + key, String(Date.now()));
+  }
+
+  // ระบบควบคุมไฟฉาย (Camera Torch Toggle)
+  let isTorchOn = false;
+  async function toggleTorch() {
+    if (!currentStream) return;
+    const track = currentStream.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+      if (!capabilities.torch) {
+        return alert('กล้องนี้ไม่รองรับการเปิดไฟฉาย (Flash/Torch)');
+      }
+      isTorchOn = !isTorchOn;
+      await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+      const btn = document.getElementById('btnTorch');
+      if (btn) {
+        btn.innerText = isTorchOn ? '🔦 ปิดไฟฉาย' : '🔦 ไฟฉาย';
+        btn.className = isTorchOn ? 'btn-torch active' : 'btn-torch';
+      }
+    } catch(err) {
+      console.warn('Torch toggle error:', err);
+    }
+  }
+
+  function checkTorchSupport() {
+    if (!currentStream) return;
+    try {
+      const track = currentStream.getVideoTracks()[0];
+      const capabilities = (track && track.getCapabilities) ? track.getCapabilities() : {};
+      const btn = document.getElementById('btnTorch');
+      if (btn) {
+        btn.style.display = capabilities.torch ? 'flex' : 'none';
+      }
+    } catch(e) {}
+  }
+
   function haversineKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1054,6 +1163,7 @@
       video.srcObject = stream;
       video.onloadedmetadata = () => {
         isCameraReady = true;
+        checkTorchSupport();
         checkAndStartAutoScan();
       };
     } catch(err) {
@@ -1249,6 +1359,18 @@
             snapshotCtx.drawImage(video, 0, 0, 160, 160);
             snapshotCtx.restore();
             candidateSnapshot = snapshotCanvas.toDataURL('image/jpeg', 0.50);
+
+            // ตรวจสอบค่าความสว่างเฉลี่ย (Low-Light Detection) รวดเร็ว 0.05ms
+            const imgData = snapshotCtx.getImageData(0, 0, 160, 160).data;
+            let colorSum = 0;
+            for (let i = 0; i < imgData.length; i += 32) {
+              colorSum += (imgData[i] * 0.299 + imgData[i + 1] * 0.587 + imgData[i + 2] * 0.114);
+            }
+            const avgBrightness = colorSum / (imgData.length / 32);
+            const lowLightEl = document.getElementById('lowLightBadge');
+            if (lowLightEl) {
+              lowLightEl.style.display = (avgBrightness < 32 && isScanning) ? 'block' : 'none';
+            }
           }
         } catch(e) {}
 
@@ -1321,6 +1443,17 @@
 
           const match = findBestMatch(detection.descriptor);
           if (match && match.isMatched) {
+            // ระบบป้องกันสแกนซ้ำซ้อน 3 นาที (Cooldown Safeguard)
+            const cd = checkScanCooldown(match.employeeId, match.name);
+            if (cd.isCooldown) {
+              consecutiveMatchCount = 0;
+              candidateMatchId = null;
+              overlayStatus.innerText = `⏳ คุณ ${match.name} เพิ่งลงเวลาไป (รออีก ${cd.remainingText})`;
+              overlayStatus.style.background = 'rgba(245, 158, 11, 0.95)';
+              updateDailyCard(match);
+              return;
+            }
+
             // ยืนยันว่าเป็นบุคคลเดียวกันต่อเนื่องอย่างน้อย 2 เฟรมติด
             if (candidateMatchId === match.employeeId) {
               consecutiveMatchCount++;
@@ -1675,6 +1808,7 @@
       localLogs.unshift(newRecord);
       localStorage.setItem('localAttendanceLogs', JSON.stringify(localLogs.slice(0, 100)));
       localStorage.setItem('last_scanned_empid', currentMatch.employeeId);
+      setScanCooldown(currentMatch.employeeId, currentMatch.name);
       todayLogs.unshift(newRecord);
       updateDailyCard(currentMatch);
     } catch(e) {}
