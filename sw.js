@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V15 - Zero Cache Header + Fast Sync)
-const CACHE_NAME = 'attendance-pwa-v15';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V16 - Dynamic Camera Mirror & True Orientation)
+const CACHE_NAME = 'attendance-pwa-v16';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที
