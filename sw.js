@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V19 - Instant Google Sheets Log Deletion Sync)
-const CACHE_NAME = 'attendance-pwa-v19';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V20 - Single-Shot Face Registration & Camera Switch)
+const CACHE_NAME = 'attendance-pwa-v20';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที

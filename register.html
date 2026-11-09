@@ -175,7 +175,7 @@
       position: relative; width: 100%; border-radius: 20px; overflow: hidden;
       background: #000; box-shadow: var(--shadow); margin-bottom: 20px; aspect-ratio: 4/3;
     }
-    video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); transition: transform 0.2s ease; }
 
     .form-card {
       background: var(--card-bg); border: 1px solid var(--card-border);
@@ -233,19 +233,14 @@
   <div id="registerContent" class="register-content">
     <div class="page-header">
       <h2>👤 ลงทะเบียนพนักงานใหม่</h2>
-      <p class="instruction">กำหนดรหัส PIN 4 หลักประจำตัวพนักงาน และมองกล้องบันทึก 3 มุมมอง</p>
-    </div>
-
-    <div class="step-dots">
-      <div class="dot" id="dot1"></div>
-      <div class="dot" id="dot2"></div>
-      <div class="dot" id="dot3"></div>
+      <p class="instruction">กำหนดรหัส PIN 4 หลักประจำตัวพนักงาน ส่องหน้าตรง และกดบันทึกครั้งเดียว</p>
     </div>
 
     <div id="status">กำลังเชื่อมต่อกล้องและ AI Model...</div>
 
-    <div class="video-wrapper">
+    <div class="video-wrapper" style="position:relative;">
       <video id="video" autoplay muted playsinline></video>
+      <button id="btnSwitchCam" class="btn-switch-cam" onclick="switchCamera()" title="สลับกล้องหน้า/หลัง" style="position:absolute; bottom:12px; right:12px; background:rgba(15,23,42,0.75); color:#fff; border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:6px 14px; font-size:12px; cursor:pointer; backdrop-filter:blur(8px); z-index:10; font-family:'Sarabun',sans-serif;">🔄 สลับกล้อง</button>
     </div>
 
     <div class="form-card">
@@ -286,7 +281,7 @@
       <input type="text" id="username" placeholder="เช่น สมชาย ใจดี">
 
       <button id="btnSave" class="btn-save" onclick="saveFace()" disabled>
-        📸 บันทึกใบหน้า <span id="saveCount" class="count-badge">0 / 3</span>
+        📸 ถ่ายภาพและบันทึกใบหน้า
       </button>
 
       <div id="msg"></div>
@@ -311,19 +306,17 @@
   const statusDiv = document.getElementById('status');
   const btnSave   = document.getElementById('btnSave');
   const msgDiv    = document.getElementById('msg');
-  const countSpan = document.getElementById('saveCount');
-  let saveCounter = 0;
-  let firstAngleVector = null; // เก็บ Vector มุมที่ 1 เพื่อใช้ตรวจสอบความเข้ากันได้ของมุมที่ 2-3 (Enrollment Quality Gate)
 
-  function l2normalize(v) {
-    const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
-    return n > 0 ? v.map(x => x / n) : v;
-  }
+  let currentFacingMode = 'user';
+  let currentStream = null;
 
-  function cosineSim(a, b) {
-    let s = 0;
-    for (let i = 0; i < 128; i++) s += a[i] * b[i];
-    return s;
+  function applyCameraOrientation() {
+    if (!video) return;
+    if (currentFacingMode === 'user') {
+      video.style.transform = 'scaleX(-1)';
+    } else {
+      video.style.transform = 'scaleX(1)';
+    }
   }
 
   let adminPin = localStorage.getItem('admin_pin') || '1234';
@@ -340,13 +333,6 @@
     }
   }
 
-  function updateDots() {
-    [1, 2, 3].forEach(i => {
-      const dot = document.getElementById('dot' + i);
-      dot.className = 'dot' + (i <= saveCounter ? ' active' : '');
-    });
-  }
-
   async function initModels() {
     try {
       const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
@@ -361,17 +347,25 @@
     }
   }
 
-  function startCamera() {
-    // Defensive check: Browser security blocks getUserMedia on non-HTTPS origins (except localhost)
+  function startCamera(facing = null) {
+    if (facing) currentFacingMode = facing;
+    applyCameraOrientation();
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      statusDiv.innerHTML = '<span style="color:#f87171">⚠️ เบราว์เซอร์บล็อกกล้องเนื่องจากไม่ใช่ HTTPS<br>กรุณาเปิดผ่าน https:// (Netlify) หรือ http://localhost บนเครื่องนี้</span>';
+      statusDiv.innerHTML = '<span style="color:#f87171">⚠️ เบราว์เซอร์บล็อกกล้องเนื่องจากไม่ใช่ HTTPS<br>กรุณาเปิดผ่าน https:// บนเครื่องนี้</span>';
       return;
     }
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    if (currentStream) {
+      try { currentStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+      currentStream = null;
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } })
       .then(stream => {
+        currentStream = stream;
         video.srcObject = stream;
-        statusDiv.innerText = '✅ กล้องพร้อมใช้งาน กรุณากรอกข้อมูลและส่องหน้า';
+        statusDiv.innerText = '✅ กล้อง' + (currentFacingMode === 'user' ? 'หน้า' : 'หลัง') + 'พร้อมใช้งาน กรุณากรอกข้อมูลและส่องหน้า';
         statusDiv.style.color = '#34d399';
         btnSave.disabled = false;
       })
@@ -380,10 +374,17 @@
       });
   }
 
+  function switchCamera() {
+    currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+    const switchBtn = document.getElementById('btnSwitchCam');
+    if (switchBtn) switchBtn.innerText = currentFacingMode === 'user' ? '🔄 กล้องหน้า' : '🔄 กล้องหลัง';
+    startCamera(currentFacingMode);
+  }
+
   async function saveFace() {
     const empIdEl = document.getElementById('employeeId');
     const empId = empIdEl.value.trim() || ('EMP' + Math.floor(1000 + Math.random() * 9000));
-    empIdEl.value = empId; // ล็อกรหัสพนักงานให้คงที่ทั้ง 3 มุมใบหน้า ไม่ให้สุ่มรหัสใหม่ในมุมที่ 2-3
+    empIdEl.value = empId;
 
     const name  = document.getElementById('username').value.trim();
     const dept  = document.getElementById('department').value;
@@ -394,7 +395,7 @@
     if (pin.length < 4) return alert('กรุณากำหนดรหัส PIN อย่างน้อย 4 หลักสำหรับพนักงานคนนี้');
 
     btnSave.disabled = true;
-    btnSave.innerHTML = '⏳ กำลังวิเคราะห์ใบหน้า... <span class="count-badge">' + saveCounter + ' / 3</span>';
+    btnSave.innerHTML = '⏳ กำลังวิเคราะห์และบันทึกใบหน้า...';
     msgDiv.innerText = '';
 
     const detection = await faceapi
@@ -405,26 +406,11 @@
     if (!detection) {
       alert('ไม่พบใบหน้า! กรุณามองกล้องในที่สว่างให้ชัดเจน');
       btnSave.disabled = false;
-      btnSave.innerHTML = '📸 บันทึกใบหน้า <span class="count-badge">' + saveCounter + ' / 3</span>';
+      btnSave.innerHTML = '📸 ถ่ายภาพและบันทึกใบหน้า';
       return;
     }
 
     const descriptorArray = Array.from(detection.descriptor);
-    const normalizedDesc = l2normalize(descriptorArray);
-
-    // มาตรการป้องกัน Vector เพี้ยน (Enrollment Quality Gate):
-    // ตรวจสอบว่ามุมที่ 2 และ 3 ต้องมีค่าความเหมือน (Cosine Similarity) กับมุมแรก >= 94% ป้องกันภาพหลุด/คนอื่นยื่นหน้าเข้ามา
-    if (saveCounter === 0) {
-      firstAngleVector = normalizedDesc;
-    } else if (firstAngleVector) {
-      const sim = cosineSim(normalizedDesc, firstAngleVector);
-      if (sim < 0.94) {
-        alert('⚠️ ใบหน้ามุมนี้ไม่ตรงกับมุมแรก (ความสอดคล้องเพียง ' + Math.round(sim * 100) + '% ซึ่งต่ำกว่าเกณฑ์ 94%)\nกรุณามองตรงเข้ากล้องในที่สว่างให้ชัดเจน แล้วกดบันทึกใหม่อีกครั้ง');
-        btnSave.disabled = false;
-        btnSave.innerHTML = '📸 บันทึกมุมถัดไป <span class="count-badge">' + saveCounter + ' / 3</span>';
-        return;
-      }
-    }
 
     try {
       const res = await fetch(API_URL, {
@@ -441,14 +427,7 @@
       });
       const data = await res.json();
 
-      // ล็อกช่องกรอกข้อมูลหลังบันทึกมุมที่ 1 สำเร็จ เพื่อให้ทั้ง 3 มุมใช้รหัสและชื่อเดียวกัน 100%
-      empIdEl.readOnly = true;
-      document.getElementById('username').readOnly = true;
-      document.getElementById('userPin').readOnly = true;
-      document.getElementById('department').disabled = true;
-      document.getElementById('role').disabled = true;
-
-      // บันทึกข้อมูลมุมใบหน้าลงแคชทันที
+      // บันทึกข้อมูลลงแคชในเครื่องทันที
       try {
         const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
         cached.push({
@@ -463,26 +442,17 @@
         localStorage.setItem('cached_known_faces', JSON.stringify(cached));
       } catch(e) {}
 
-      saveCounter++;
-      countSpan.innerText = saveCounter + ' / 3';
-      updateDots();
+      msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนพนักงานสำเร็จเรียบร้อย! (รหัส: ' + empId + ' | PIN: ' + pin + ')</span>';
+      btnSave.innerHTML = '✅ บันทึกสำเร็จ';
+      btnSave.disabled = true;
 
-      if (saveCounter >= 3) {
-        msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนครบ 3 มุมสำเร็จ! (รวมเป็น 1 รายชื่อเดียวอัตโนมัติ | สิทธิ์: ' + role + ' | PIN: ' + pin + ')</span>';
-        btnSave.innerHTML = '✅ ลงทะเบียนสำเร็จ';
-        btnSave.disabled = true;
-
-        setTimeout(() => { window.location.href = 'index.html'; }, 2000);
-      } else {
-        msgDiv.innerHTML = '<span class="msg-success">✅ บันทึกมุมที่ ' + saveCounter + ' สำเร็จ! กรุณาเอียงหน้าเล็กน้อยแล้วกดอีกครั้ง</span>';
-        btnSave.disabled = false;
-        btnSave.innerHTML = '📸 บันทึกมุมถัดไป <span class="count-badge">' + saveCounter + ' / 3</span>';
-      }
+      setTimeout(() => { window.location.href = 'index.html'; }, 1800);
     } catch (e) {
       msgDiv.innerHTML = '<span class="msg-error">❌ บันทึกล้มเหลว: ' + e.message + '</span>';
       btnSave.disabled = false;
-      btnSave.innerHTML = '📸 บันทึกใบหน้า <span class="count-badge">' + saveCounter + ' / 3</span>';
+      btnSave.innerHTML = '📸 ถ่ายภาพและบันทึกใบหน้า';
     }
+  }
   }
 
   window.addEventListener('load', () => {
