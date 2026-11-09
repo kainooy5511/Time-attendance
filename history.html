@@ -573,9 +573,6 @@
         <button class="btn-excel btn-timesheet" onclick="exportTimesheetReport()">
           📊 Export Excel (.xlsx)
         </button>
-        <button class="btn-excel btn-raw" onclick="exportToExcel()">
-          📑 Export บันทึกดิบ (.xlsx)
-        </button>
         <button class="btn-refresh" onclick="loadAttendance()">
           🔄 รีเฟรช
         </button>
@@ -832,6 +829,20 @@
     return s;
   }
 
+  function formatPhotoUrl(url) {
+    if (!url || typeof url !== 'string' || url === '-' || url.length < 5) return null;
+    const s = url.trim();
+    if (s.startsWith('data:image')) return s;
+    if (s.includes('drive.google.com')) {
+      const m = s.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || s.match(/id=([a-zA-Z0-9_-]+)/);
+      if (m && m[1]) {
+        return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w200`;
+      }
+    }
+    if (s.startsWith('http')) return s;
+    return null;
+  }
+
   function populateAdminDropdowns(records) {
     const empSelect = document.getElementById('empFilter');
     const uniqueEmployees = [...new Set(records.map(r => String(r.name || '').trim()).filter(Boolean))];
@@ -912,9 +923,12 @@
       const typeClass = typeStr.includes('Check-Out') || typeStr.includes('ออกงาน') ? 'type-out' : 'type-in';
       const isLate = (item.status || '').includes('สาย');
 
-      const photoHtml = (item.photoLink && item.photoLink.startsWith('data:image'))
-        ? `<img class="avatar-img" src="${item.photoLink}" alt="Photo">`
-        : (item.name ? item.name.charAt(0).toUpperCase() : '?');
+      const photoSrc = formatPhotoUrl(item.photoLink);
+      const initialChar = item.name ? item.name.charAt(0).toUpperCase() : '?';
+      const photoHtml = photoSrc
+        ? `<img class="avatar-img" src="${photoSrc}" alt="Photo" loading="lazy" style="cursor:pointer;" onclick="window.open('${(item.photoLink && item.photoLink.startsWith('http')) ? item.photoLink : photoSrc}', '_blank')" title="คลิกดูภาพใบหน้าขนาดเต็ม" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+           <span class="avatar-fallback" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">${initialChar}</span>`
+        : `<span class="avatar-fallback">${initialChar}</span>`;
 
       const otBadge = (item.otHours && parseFloat(item.otHours) > 0)
         ? `<span class="meta-tag ot-tag">⏱️ OT: ${item.otHours} ชม.</span>` : '';
@@ -1154,7 +1168,7 @@
       aoa.push([]);
       aoa.push(['สรุปผลรอบเดือน:', '', `วันทำงานจริง: ${totalWorkDays} วัน`, `มาสาย: ${totalLateCount} ครั้ง`, `รวม OT: ${totalOtHours} ชม.`]);
       aoa.push([]);
-      aoa.push([`ลงชื่อพนักงาน (${emp.name}): _____________________`, '', 'ลงชื่อผู้จัดทำ (HR): _____________________', '', 'ลงชื่อผู้อนุมัติ (Manager): _____________________']);
+      aoa.push([`ลงชื่อพนักงาน (${emp.name}): _____________________`, '', '', '', 'ลงชื่อผู้อนุมัติ (Manager): _____________________']);
 
       const ws = XLSX.utils.aoa_to_sheet(aoa);
 
@@ -1459,13 +1473,7 @@
             <div class="a4-sign-date">วันที่ ..... / ..... / .........</div>
           </div>
           <div class="a4-sign-box">
-            <div class="a4-sign-role">(2) ผู้ตรวจสอบฝ่ายบุคคล (HR)</div>
-            <div class="a4-sign-line">ลงชื่อ ....................................................</div>
-            <div class="a4-sign-name">( .................................................... )</div>
-            <div class="a4-sign-date">วันที่ ..... / ..... / .........</div>
-          </div>
-          <div class="a4-sign-box">
-            <div class="a4-sign-role">(3) ผู้จัดการ / ผู้อนุมัติ (Manager)</div>
+            <div class="a4-sign-role">(2) ผู้จัดการ / ผู้อนุมัติ (Manager)</div>
             <div class="a4-sign-line">ลงชื่อ ....................................................</div>
             <div class="a4-sign-name">( .................................................... )</div>
             <div class="a4-sign-date">วันที่ ..... / ..... / .........</div>
