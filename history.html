@@ -901,16 +901,42 @@
   }
 
   function formatDisplayTime(val) {
-    if (!val) return '-';
+    if (!val || val === '-' || val === '--:--:--') return '--:--:--';
     let s = String(val).replace(/'/g, '').trim();
+
+    // 1. กรณีเป็น ISO String ปี 1899 ที่ Google Apps Script พ่นออกมา เช่น '1899-12-30T08:16:00.000Z'
+    if (s.includes('1899') && s.includes('T') && s.includes('Z')) {
+      try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          const thHours = (d.getUTCHours() + 7) % 24;
+          const hh = String(thHours).padStart(2, '0');
+          const mm = String(d.getUTCMinutes()).padStart(2, '0');
+          const ss = String(d.getUTCSeconds()).padStart(2, '0');
+          return `${hh}:${mm}:${ss}`;
+        }
+      } catch(e) {}
+    }
+
+    // 2. กรณีเป็น ISO String ทั่วไป (เช่น ปีปัจจุบัน)
     if (s.includes('T') && s.includes('Z')) {
       try {
         const d = new Date(s);
         if (!isNaN(d.getTime())) {
-          return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         }
       } catch(e) {}
     }
+
+    // 3. กรณีมีข้อความภาษาอังกฤษปน เช่น 'Sat Dec 30 1899 15:16:00 GMT+0700' หรือเวลาปกติ '15:16:00'
+    const m = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (m) {
+      const hh = m[1].padStart(2, '0');
+      const mm = m[2];
+      const ss = m[3] ? `:${m[3]}` : ':00';
+      return `${hh}:${mm}${ss}`;
+    }
+
     return s;
   }
 

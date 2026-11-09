@@ -816,9 +816,51 @@
     if (otEl) otEl.innerText = otStartTime;
   }
 
+  // ฟังก์ชันจัดรูปแบบเวลาให้เป็น HH:mm:ss เท่านั้น กรองโค้ดแปลกปลอม เช่น 1899-12-30T..., GMT+..., หรือตัวหนังสือออก 100%
+  function formatDisplayTime(val) {
+    if (!val || val === '-' || val === '--:--:--') return '--:--:--';
+    let s = String(val).replace(/'/g, '').trim();
+
+    // 1. กรณีเป็น ISO String ปี 1899 ที่ Google Apps Script พ่นออกมา เช่น '1899-12-30T08:16:00.000Z'
+    if (s.includes('1899') && s.includes('T') && s.includes('Z')) {
+      try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          const thHours = (d.getUTCHours() + 7) % 24;
+          const hh = String(thHours).padStart(2, '0');
+          const mm = String(d.getUTCMinutes()).padStart(2, '0');
+          const ss = String(d.getUTCSeconds()).padStart(2, '0');
+          return `${hh}:${mm}:${ss}`;
+        }
+      } catch(e) {}
+    }
+
+    // 2. กรณีเป็น ISO String ทั่วไป (เช่น ปีปัจจุบัน)
+    if (s.includes('T') && s.includes('Z')) {
+      try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        }
+      } catch(e) {}
+    }
+
+    // 3. กรณีมีข้อความภาษาอังกฤษปน เช่น 'Sat Dec 30 1899 15:16:00 GMT+0700' หรือเวลาปกติ '15:16:00'
+    const m = s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (m) {
+      const hh = m[1].padStart(2, '0');
+      const mm = m[2];
+      const ss = m[3] ? `:${m[3]}` : ':00';
+      return `${hh}:${mm}${ss}`;
+    }
+
+    return s;
+  }
+
   function timeStringToMinutes(timeStr, defaultH = 8, defaultM = 0) {
     if (!timeStr) return defaultH * 60 + defaultM;
-    const parts = timeStr.split(':').map(Number);
+    const cleanTime = formatDisplayTime(timeStr);
+    const parts = cleanTime.split(':').map(Number);
     const h = (parts.length >= 1 && !isNaN(parts[0])) ? parts[0] : defaultH;
     const m = (parts.length >= 2 && !isNaN(parts[1])) ? parts[1] : defaultM;
     return h * 60 + m;
@@ -1341,9 +1383,10 @@
     const inStatusEl = document.getElementById('dailyInStatus');
 
     if (checkIn && checkIn.time) {
-      inTimeEl.innerText = checkIn.time + ' น.';
+      const cleanInTime = formatDisplayTime(checkIn.time);
+      inTimeEl.innerText = cleanInTime + ' น.';
       const limitTotalMin = timeStringToMinutes(workStartTime, 8, 0);
-      const inTotalMin = timeStringToMinutes(checkIn.time, 8, 0);
+      const inTotalMin = timeStringToMinutes(cleanInTime, 8, 0);
 
       if (inTotalMin <= limitTotalMin) {
         const diff = limitTotalMin - inTotalMin;
@@ -1367,9 +1410,10 @@
     const outItemEl = document.getElementById('dailyOutItem');
 
     if (checkOut && checkOut.time && checkOut !== checkIn) {
-      outTimeEl.innerText = checkOut.time + ' น.';
+      const cleanOutTime = formatDisplayTime(checkOut.time);
+      outTimeEl.innerText = cleanOutTime + ' น.';
       const otLimitTotalMin = timeStringToMinutes(otStartTime, 17, 0);
-      const outTotalMin = timeStringToMinutes(checkOut.time, 17, 0);
+      const outTotalMin = timeStringToMinutes(cleanOutTime, 17, 0);
 
       if (outTotalMin < otLimitTotalMin) {
         // ออกก่อนเวลาที่กำหนด -> แจ้งเตือนสีเหลือง ผิดปกติ
