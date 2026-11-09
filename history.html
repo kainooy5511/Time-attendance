@@ -1492,6 +1492,19 @@
         .then(cfg => { if (cfg.adminPin) adminMasterPin = cfg.adminPin; })
         .catch(() => {});
     }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js?v=15').then((reg) => {
+        reg.update();
+      }).catch(() => {});
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
   });
 </script>
 

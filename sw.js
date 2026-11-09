@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V14 - Drive Avatar Photo Display + Cleaned Signatures + Dynamic Month Days)
-const CACHE_NAME = 'attendance-pwa-v14';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V15 - Zero Cache Header + Fast Sync)
+const CACHE_NAME = 'attendance-pwa-v15';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที
