@@ -646,7 +646,15 @@
   }
 
   const API_URL = localStorage.getItem('gasApiUrl') || (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
-  let companyWorkStartTime = '08:30';
+  let companyWorkStartTime = localStorage.getItem('work_start_time') || '08:00';
+
+  function parseWorkStartTime(val) {
+    if (!val) return '08:00';
+    const s = String(val).replace(/'/g, '').trim();
+    const m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) return m[1].padStart(2, '0') + ':' + m[2];
+    return '08:00';
+  }
 
   function toSecondsOfDay(val) {
     if (!val) return -1;
@@ -658,7 +666,7 @@
     return -1;
   }
 
-  function getDailyAttendancePair(empLogs, targetWorkStartTime = '08:30') {
+  function getDailyAttendancePair(empLogs, targetWorkStartTime = '08:00') {
     if (!empLogs || empLogs.length === 0) {
       return { checkIn: null, checkOut: null, timeIn: '-', timeOut: '-', status: '-' };
     }
@@ -679,8 +687,9 @@
 
     // 3. ตรวจสอบสถานะการเข้างาน (Status) ตามเวลาเริ่มงานจริง
     let status = '-';
-    const limitParts = (targetWorkStartTime || '08:30').split(':').map(Number);
-    const limitSec = (limitParts[0] || 8) * 3600 + (limitParts[1] || 30) * 60;
+    const cleanStartTime = parseWorkStartTime(targetWorkStartTime);
+    const limitParts = cleanStartTime.split(':').map(Number);
+    const limitSec = (limitParts[0] || 8) * 3600 + (limitParts[1] || 0) * 60;
 
     if (checkIn || checkOut) {
       let statusParts = [];
@@ -699,12 +708,14 @@
         statusParts.push(checkOut.status);
       }
 
+      if (!checkOut && checkIn) {
+        statusParts.push('(ยังไม่ลงเวลาออก)');
+      } else if (!checkIn && checkOut) {
+        statusParts.push('(ขาดลงเวลาเข้า)');
+      }
+
       if (statusParts.length > 0) {
         status = statusParts.join(' / ');
-      } else if (checkIn && !checkOut) {
-        status = 'เข้างานปกติ (ยังไม่ลงเวลาออก)';
-      } else if (!checkIn && checkOut) {
-        status = 'ออกงานปกติ (ขาดลงเวลาเข้า)';
       } else {
         status = 'ปกติ (ตรงเวลา)';
       }
@@ -1525,7 +1536,7 @@
         .then(r => r.json())
         .then(cfg => {
           if (cfg.adminPin) adminMasterPin = cfg.adminPin;
-          if (cfg.workStartTime) companyWorkStartTime = cfg.workStartTime;
+          if (cfg.workStartTime) companyWorkStartTime = parseWorkStartTime(cfg.workStartTime);
         })
         .catch(() => {});
     }

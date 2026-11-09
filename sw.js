@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V21 - Universal Admin PIN Authentication & Syntax Fix)
-const CACHE_NAME = 'attendance-pwa-v21';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V22 - Complete Test Case Matrix & Config WorkTime Parser)
+const CACHE_NAME = 'attendance-pwa-v22';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที
