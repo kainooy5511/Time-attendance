@@ -1,10 +1,10 @@
 {
-  "id": "/",
+  "id": "./",
   "name": "Smart Attendance — ระบบลงเวลาอัจฉริยะ",
   "short_name": "ลงเวลา",
   "description": "ระบบลงเวลาเข้างานอัจฉริยะด้วยการสแกนใบหน้าและระบุพิกัด GPS",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0b1329",
   "theme_color": "#0f172a",
