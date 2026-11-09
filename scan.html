@@ -759,10 +759,28 @@
   const gpsAlertBox    = document.getElementById('gps-alert-box');
   const btnStart       = document.getElementById('btnStart');
 
-  // เกณฑ์ระยะห่างใบหน้าระดับเข้มงวดสูงสุด (Strict Enterprise Biometrics - Zero False Acceptance)
-  // ค่า <= 0.42 = ยืนยันว่าเป็นบุคคลเดียวกันอย่างแท้จริง หากระยะห่างเกิน 0.42 จะถือว่า "ไม่ผ่าน" ทันที ไม่มีการเดาสุ่มเข้ากับหน้าที่ใกล้เคียงที่สุด
-  const MATCH_THRESHOLD = 0.42;
-  const REQUIRED_CONSECUTIVE_FRAMES = 2; // ต้องตรวจจับตรงกันต่อเนื่อง 2 เฟรมติดกัน (~400ms) เพื่อความมั่นใจและป้องกันการสแกนผิดพลาด 100%
+  // เกณฑ์การรู้จำใบหน้าระดับ Enterprise (Method 2: L2-Normalized Cosine Similarity + Margin Gap Analysis)
+  // 1. ความเหมือน (Cosine Similarity) ต้อง >= 93% (คนเดียวกันส่องกล้องมักจะได้ 96% - 99%)
+  // 2. ระยะห่างจากคนอันดับสอง (Margin Gap) ต้องทิ้งห่าง >= 4% เพื่อตัดปัญหาคนแปลกหน้าที่หน้าก้ำกึ่ง
+  const SIMILARITY_THRESHOLD = 0.93;
+  const MARGIN_GAP_THRESHOLD = 0.04;
+  const REQUIRED_CONSECUTIVE_FRAMES = 2; // ต้องตรวจจับตรงกันต่อเนื่อง 2 เฟรมติดกัน (~400ms)
+
+  function l2normalize(v) {
+    let sum = 0;
+    for (let i = 0; i < 128; i++) sum += v[i] * v[i];
+    const norm = Math.sqrt(sum);
+    if (norm <= 0) return v;
+    const out = new Float32Array(128);
+    for (let i = 0; i < 128; i++) out[i] = v[i] / norm;
+    return out;
+  }
+
+  function cosineSimilarity(a, b) {
+    let dot = 0;
+    for (let i = 0; i < 128; i++) dot += a[i] * b[i];
+    return dot;
+  }
 
   function parseWorkStartTime(val) {
     if (!val) return '08:00';
@@ -840,7 +858,7 @@
   }
 
   // ระบบทำความสะอาดและตรวจสอบคุณภาพ Vector ใบหน้า (Outlier Rejection)
-  // หากมุมใดที่ลงทะเบียนไว้มีระยะห่างเกิน 0.50 เมื่อเทียบกับมุมอื่นของพนักงานคนเดียวกัน จะถูกตัดออกทันทีเพื่อป้องกัน Vector เสีย
+  // ทุก Vector จะถูกปรับให้เป็น L2-Normalized และมุมใดที่สอดคล้องกับมุมอื่นของพนักงานคนเดียวกันต่ำกว่า 90% จะถูกคัดทิ้งทันที
   function sanitizeKnownFaces(rawList) {
     if (!Array.isArray(rawList)) return [];
     const valid = rawList
@@ -850,7 +868,7 @@
         employeeId: String(u.employeeId || 'EMP').trim(),
         department: String(u.department || 'ทั่วไป').trim(),
         role: String(u.role || 'พนักงานทั่วไป').trim(),
-        descriptor: new Float32Array(u.descriptor)
+        descriptor: l2normalize(new Float32Array(u.descriptor))
       }));
 
     const byEmp = {};
@@ -868,18 +886,16 @@
         return;
       }
       list.forEach((target, idx) => {
-        let minD = 1.0;
+        let maxSim = 0;
         for (let i = 0; i < list.length; i++) {
           if (i === idx) continue;
-          let s = 0;
-          for (let j = 0; j < 128; j++) s += (target.descriptor[j] - list[i].descriptor[j]) ** 2;
-          const d = Math.sqrt(s);
-          if (d < minD) minD = d;
+          const sim = cosineSimilarity(target.descriptor, list[i].descriptor);
+          if (sim > maxSim) maxSim = sim;
         }
-        if (minD <= 0.50) {
+        if (maxSim >= 0.90) {
           cleaned.push(target);
         } else {
-          console.warn('Dropped corrupted angle vector for', target.name, 'min distance to other angles:', minD);
+          console.warn('Dropped corrupted angle vector for', target.name, 'max similarity to other angles:', maxSim);
         }
       });
     });
@@ -1226,7 +1242,7 @@
           }
 
           const match = findBestMatch(detection.descriptor);
-          if (match && match.isMatched && match.distance <= MATCH_THRESHOLD) {
+          if (match && match.isMatched) {
             // ยืนยันว่าเป็นบุคคลเดียวกันต่อเนื่องอย่างน้อย 2 เฟรมติด
             if (candidateMatchId === match.employeeId) {
               consecutiveMatchCount++;
@@ -1238,11 +1254,12 @@
             if (consecutiveMatchCount >= REQUIRED_CONSECUTIVE_FRAMES) {
               clearInterval(scanInterval);
               isScanning = false;
-              overlayStatus.innerText = '✅ ตรวจพบ: ' + match.name;
+              const confPct = Math.round(match.similarity * 100);
+              overlayStatus.innerText = `✅ ตรวจพบ: ${match.name} (${confPct}%)`;
               overlayStatus.style.background = 'rgba(16, 185, 129, 0.9)';
               showModal(match, candidateSnapshot);
             } else {
-              overlayStatus.innerText = '🔍 กำลังยืนยันตัวตน... ' + match.name + ' (' + consecutiveMatchCount + '/' + REQUIRED_CONSECUTIVE_FRAMES + ')';
+              overlayStatus.innerText = `🔍 กำลังยืนยันตัวตน... ${match.name} (${consecutiveMatchCount}/${REQUIRED_CONSECUTIVE_FRAMES})`;
               overlayStatus.style.background = 'rgba(16, 185, 129, 0.85)';
             }
           } else {
@@ -1379,41 +1396,62 @@
   }
 
   function findBestMatch(queryDesc) {
-    let best = { name: 'unknown', distance: 1.0, isMatched: false };
-    if (!queryDesc || queryDesc.length !== 128 || !knownFaces || knownFaces.length === 0) return best;
+    let bestResult = { name: 'unknown', employeeId: '', department: '', role: '', similarity: 0, isMatched: false };
+    if (!queryDesc || queryDesc.length !== 128 || !knownFaces || knownFaces.length === 0) return bestResult;
 
-    let minDistance = 1.0;
-    let matchedUser = null;
+    const qNorm = l2normalize(queryDesc);
 
+    // จัดกลุ่มตามพนักงานแต่ละคน และหาคะแนนความเหมือนสูงสุด (Cosine Similarity) ของแต่ละคน
+    const byEmp = new Map();
     knownFaces.forEach(u => {
       if (!u.descriptor || u.descriptor.length !== 128) return;
-      try {
-        const d = faceapi.euclideanDistance(queryDesc, u.descriptor);
-        if (!isNaN(d) && d < minDistance) {
-          minDistance = d;
-          matchedUser = u;
-        }
-      } catch(e) {
-        console.warn('Distance error on', u.name, e);
+      const k = (u.employeeId || u.name).toUpperCase();
+      if (!byEmp.has(k)) {
+        byEmp.set(k, {
+          employeeId: u.employeeId,
+          name: u.name,
+          department: u.department,
+          role: u.role,
+          maxSim: -1
+        });
       }
+      const sim = cosineSimilarity(qNorm, u.descriptor);
+      const emp = byEmp.get(k);
+      if (sim > emp.maxSim) emp.maxSim = sim;
     });
 
-    // มาตรการป้องกันเด็ดขาด: หากระยะห่างเกินเกณฑ์เข้มงวด (distance > MATCH_THRESHOLD)
-    // ถือเป็นบุคคลนิรนามที่ไม่ผ่านการรับรองทันที (isMatched = false) ห้ามส่งชื่อพนักงานออกไปเด็ดขาด!
-    if (matchedUser && minDistance <= MATCH_THRESHOLD) {
+    const ranked = Array.from(byEmp.values()).sort((a, b) => b.maxSim - a.maxSim);
+    if (ranked.length === 0) return bestResult;
+
+    const top = ranked[0];
+    const second = ranked[1] || { maxSim: 0 };
+    const marginGap = top.maxSim - second.maxSim;
+
+    // --- Enterprise Biometric Verification Gate (Method 2) ---
+    // Gate 1: คะแนนความเหมือนต้อง >= SIMILARITY_THRESHOLD (93%)
+    // Gate 2: คะแนนต้องทิ้งห่างจากคนอันดับสองอย่างน้อย MARGIN_GAP_THRESHOLD (4%) เพื่อตัดคนแปลกหน้าออกอย่างเด็ดขาด
+    const passesSimilarity = top.maxSim >= SIMILARITY_THRESHOLD;
+    const passesMargin = (ranked.length === 1) ? true : (marginGap >= MARGIN_GAP_THRESHOLD);
+
+    if (passesSimilarity && passesMargin) {
       return {
-        name: matchedUser.name,
-        employeeId: matchedUser.employeeId,
-        department: matchedUser.department,
-        role: matchedUser.role,
-        distance: minDistance,
+        name: top.name,
+        employeeId: top.employeeId,
+        department: top.department,
+        role: top.role,
+        similarity: top.maxSim,
+        marginGap: marginGap,
         isMatched: true
       };
     }
 
     return {
       name: 'unknown',
-      distance: minDistance,
+      employeeId: '',
+      department: '',
+      role: '',
+      similarity: top.maxSim,
+      marginGap: marginGap,
       isMatched: false
     };
   }

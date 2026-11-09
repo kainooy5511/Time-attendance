@@ -313,6 +313,18 @@
   const msgDiv    = document.getElementById('msg');
   const countSpan = document.getElementById('saveCount');
   let saveCounter = 0;
+  let firstAngleVector = null; // เก็บ Vector มุมที่ 1 เพื่อใช้ตรวจสอบความเข้ากันได้ของมุมที่ 2-3 (Enrollment Quality Gate)
+
+  function l2normalize(v) {
+    const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
+    return n > 0 ? v.map(x => x / n) : v;
+  }
+
+  function cosineSim(a, b) {
+    let s = 0;
+    for (let i = 0; i < 128; i++) s += a[i] * b[i];
+    return s;
+  }
 
   let adminPin = localStorage.getItem('admin_pin') || '1234';
 
@@ -398,6 +410,21 @@
     }
 
     const descriptorArray = Array.from(detection.descriptor);
+    const normalizedDesc = l2normalize(descriptorArray);
+
+    // มาตรการป้องกัน Vector เพี้ยน (Enrollment Quality Gate):
+    // ตรวจสอบว่ามุมที่ 2 และ 3 ต้องมีค่าความเหมือน (Cosine Similarity) กับมุมแรก >= 90% ป้องกันภาพหลุด/คนอื่นยื่นหน้าเข้ามา
+    if (saveCounter === 0) {
+      firstAngleVector = normalizedDesc;
+    } else if (firstAngleVector) {
+      const sim = cosineSim(normalizedDesc, firstAngleVector);
+      if (sim < 0.90) {
+        alert('⚠️ ใบหน้ามุมนี้ไม่ตรงกับมุมแรก (ความสอดคล้องเพียง ' + Math.round(sim * 100) + '% ซึ่งต่ำกว่าเกณฑ์ 90%)\nกรุณามองตรงเข้ากล้องในที่สว่างให้ชัดเจน แล้วกดบันทึกใหม่อีกครั้ง');
+        btnSave.disabled = false;
+        btnSave.innerHTML = '📸 บันทึกมุมถัดไป <span class="count-badge">' + saveCounter + ' / 3</span>';
+        return;
+      }
+    }
 
     try {
       const res = await fetch(API_URL, {
