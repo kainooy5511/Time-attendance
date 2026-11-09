@@ -845,22 +845,23 @@
 
     // 2. Google Apps Script
     let remoteLogs = [];
+    let isRemoteLoaded = false;
     if (API_URL) {
       try {
         const res = await fetch(API_URL + '?action=getAttendance');
-        if (res.ok) remoteLogs = await res.json();
+        if (res.ok) {
+          remoteLogs = await res.json();
+          isRemoteLoaded = true;
+          // ซิงก์แคชในเครื่องให้ตรงกับ Google Sheets เพื่อให้การลบข้อมูลในชีตมีผลทันที 100%
+          localStorage.setItem('localAttendanceLogs', JSON.stringify(remoteLogs.slice(0, 100)));
+        }
       } catch(err) {
         console.warn('GAS fetch error:', err);
       }
     }
 
-    // Clean & Sanitize
-    const merged = [...remoteLogs];
-    localLogs.forEach(loc => {
-      if (!merged.some(r => r.name === loc.name && r.time === loc.time && r.date === loc.date)) {
-        merged.unshift(loc);
-      }
-    });
+    // Clean & Sanitize: ถ้าโหลดจากชีตสำเร็จ ให้ยึดชีตเป็นหลักเสมอ
+    const merged = isRemoteLoaded ? [...remoteLogs] : [...localLogs];
 
     // กรองแถวเสียหรือ mockup ทดสอบออก ให้เหลือเฉพาะข้อมูลจริง
     allRecords = merged.filter(r => r && r.name && !String(r.name).includes('1899-12-30') && r.name !== 'ทดสอบ สมชาย');

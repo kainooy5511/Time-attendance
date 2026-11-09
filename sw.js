@@ -1,5 +1,5 @@
-// Smart Attendance PWA Service Worker (Auto-Update Engine V18 - Right-Aligned Signatures on A4 Sheet)
-const CACHE_NAME = 'attendance-pwa-v18';
+// Smart Attendance PWA Service Worker (Auto-Update Engine V19 - Instant Google Sheets Log Deletion Sync)
+const CACHE_NAME = 'attendance-pwa-v19';
 
 self.addEventListener('install', (event) => {
   // บังคับข้ามการรอ เพื่อเปิดใช้งาน Service Worker ตัวใหม่ล่าสุดทันที
