@@ -105,6 +105,8 @@ function doGet(e) {
     result = getKnownFaces();
   } else if (action === 'getAttendance') {
     result = getAttendance();
+  } else if (action === 'cleanEmptyRows') {
+    result = cleanEmptyAttendanceRows();
   } else if (action === 'cleanMockupData') {
     result = cleanMockupData();
   } else {
@@ -168,6 +170,8 @@ function doPost(e) {
     );
   } else if (action === 'deleteAttendance') {
     result = deleteAttendance(data.employeeId, data.date, data.time);
+  } else if (action === 'cleanEmptyRows') {
+    result = cleanEmptyAttendanceRows();
   } else if (action === 'updateAttendance') {
     result = updateAttendance(
       data.employeeId,
@@ -299,7 +303,7 @@ function logAttendance(name, lat, lng, employeeId, department, type, status, otH
     }
   }
 
-  sheet.appendRow([
+  const rowData = [
     employeeId || '-',
     name,
     department || '-',
@@ -312,7 +316,11 @@ function logAttendance(name, lat, lng, employeeId, department, type, status, otH
     lng || '-',
     mapLink,
     photoLink
-  ]);
+  ];
+
+  // ป้องกันการเว้นว่างแถวด้านบน: ค้นหาแถวว่างจริงแถวแรกเพื่อบันทึก ไม่กระโดดข้ามแถว
+  const targetRow = findFirstEmptyRow(sheet);
+  sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
 
   return {
     success: true,
@@ -321,6 +329,40 @@ function logAttendance(name, lat, lng, employeeId, department, type, status, otH
     time: timeStr,
     status: status
   };
+}
+
+// ฟังก์ชันค้นหาแถวว่างจริงแถวแรก เพื่อป้องกันการเขียนข้ามแถวว่าง
+function findFirstEmptyRow(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return 2;
+  const values = sheet.getRange(1, 1, lastRow, 2).getValues();
+  for (let r = 1; r < values.length; r++) {
+    const colA = String(values[r][0] || '').trim();
+    const colB = String(values[r][1] || '').trim();
+    if (!colA && !colB) {
+      return r + 1; // 1-based index ของแถวที่ว่าง
+    }
+  }
+  return lastRow + 1;
+}
+
+// ฟังก์ชันลบแถวว่างทั้งหมดในชีต Attendance ให้ตารางชิดติดกันเสมอ
+function cleanEmptyAttendanceRows() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Attendance');
+  if (!sheet || sheet.getLastRow() <= 1) return { success: true, count: 0 };
+
+  const data = sheet.getDataRange().getValues();
+  let deletedCount = 0;
+  for (let i = data.length - 1; i >= 1; i--) {
+    const colA = String(data[i][0] || '').trim();
+    const colB = String(data[i][1] || '').trim();
+    if (!colA && !colB) {
+      sheet.deleteRow(i + 1);
+      deletedCount++;
+    }
+  }
+  return { success: true, message: 'ลบแถวว่างเรียบร้อยแล้วจำนวน ' + deletedCount + ' แถว', count: deletedCount };
 }
 
 function getAttendance() {
@@ -334,6 +376,11 @@ function getAttendance() {
   let list = [];
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
+
+    // กรองแถวว่างทิ้ง ไม่นำมารวมในรายงาน
+    const rawId = String(row[0] || '').trim();
+    const rawName = String(row[1] || '').trim();
+    if (!rawId && !rawName) continue;
     
     // แปลงเวลาและวันที่ให้เป็นข้อความที่ถูกต้อง ไม่เป็น Object 1899 Date
     let timeVal = row[4];
