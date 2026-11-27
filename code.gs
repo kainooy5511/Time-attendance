@@ -201,8 +201,54 @@ function registerUser(employeeId, name, department, role, pin, faceDescriptor) {
     sheet = ss.getSheetByName('Users');
   }
 
+  const existingUsers = getKnownFaces();
+  const cleanEmpId = String(employeeId || '').trim();
+
+  // 1. มาตรการตรวจสอบรหัสพนักงานซ้ำ (Unique Employee ID Gate)
+  if (cleanEmpId) {
+    const duplicateIdUser = existingUsers.find(u =>
+      String(u.employeeId || '').trim().toUpperCase() === cleanEmpId.toUpperCase()
+    );
+    if (duplicateIdUser) {
+      return {
+        success: false,
+        error: `❌ ปฏิเสธการลงทะเบียน: รหัสพนักงาน "${cleanEmpId}" มีอยู่ในระบบแล้ว (เป็นของ "${duplicateIdUser.name}") กรุณาใช้รหัสอื่นที่ไม่ซ้ำ`
+      };
+    }
+  }
+
+  // 2. มาตรการตรวจสอบใบหน้าซ้ำซ้อนระดับไบโอเมตริก (Unique Biometric Face Gate - Cosine Similarity)
+  if (Array.isArray(faceDescriptor) && faceDescriptor.length === 128) {
+    let sum = 0;
+    for (let i = 0; i < 128; i++) sum += faceDescriptor[i] * faceDescriptor[i];
+    const norm = Math.sqrt(sum);
+    const qNorm = [];
+    for (let i = 0; i < 128; i++) qNorm.push(norm > 0 ? faceDescriptor[i] / norm : faceDescriptor[i]);
+
+    for (const u of existingUsers) {
+      if (Array.isArray(u.descriptor) && u.descriptor.length === 128) {
+        let uSum = 0;
+        for (let i = 0; i < 128; i++) uSum += u.descriptor[i] * u.descriptor[i];
+        const uNormVal = Math.sqrt(uSum);
+        let dot = 0;
+        for (let i = 0; i < 128; i++) {
+          const uVal = uNormVal > 0 ? u.descriptor[i] / uNormVal : u.descriptor[i];
+          dot += qNorm[i] * uVal;
+        }
+        // หากคะแนนความเหมือน Cosine Similarity >= 94% ถือว่าเป็นบุคคลคนเดียวกัน ห้ามลงทะเบียนซ้ำ
+        if (dot >= 0.94) {
+          const simPct = (dot * 100).toFixed(1);
+          return {
+            success: false,
+            error: `❌ ปฏิเสธการลงทะเบียน: ตรวจพบใบหน้าซ้ำซ้อนในระบบ! ใบหน้านี้ตรงกับ "${u.name}" (รหัส: ${u.employeeId || '-'}, แผนก: ${u.department || '-'}) ด้วยความเหมือน ${simPct}% ไม่อนุญาตให้ลงทะเบียนซ้ำซ้อน`
+          };
+        }
+      }
+    }
+  }
+
   sheet.appendRow([
-    employeeId || 'EMP' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMddHHmmss'),
+    cleanEmpId || 'EMP' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMddHHmmss'),
     name,
     department || 'ทั่วไป',
     role || 'พนักงานทั่วไป',

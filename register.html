@@ -247,7 +247,8 @@
       <div class="form-row">
         <div>
           <label>รหัสพนักงาน (Emp ID)</label>
-          <input type="text" id="employeeId" placeholder="เช่น EMP001">
+          <input type="text" id="employeeId" placeholder="เช่น EMP001" oninput="checkEmpIdAvailability()">
+          <div id="empIdFeedback" style="font-size:0.8em; margin-top:-6px; margin-bottom:8px; display:none;"></div>
         </div>
         <div>
           <label>🔑 รหัส PIN 4 หลักของพนักงาน</label>
@@ -320,6 +321,64 @@
   }
 
   let adminPin = localStorage.getItem('admin_pin') || '1234';
+  let registeredUsers = [];
+
+  function l2normalize(v) {
+    let sum = 0;
+    for (let i = 0; i < 128; i++) sum += v[i] * v[i];
+    const norm = Math.sqrt(sum);
+    if (norm <= 0) return v;
+    const out = new Float32Array(128);
+    for (let i = 0; i < 128; i++) out[i] = v[i] / norm;
+    return out;
+  }
+
+  function cosineSimilarity(a, b) {
+    let dot = 0;
+    for (let i = 0; i < 128; i++) dot += a[i] * b[i];
+    return dot;
+  }
+
+  function loadRegisteredUsers() {
+    try {
+      const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
+      if (Array.isArray(cached) && cached.length > 0) {
+        registeredUsers = cached;
+      }
+    } catch(e) {}
+
+    if (API_URL) {
+      fetch(API_URL + '?action=getKnownFaces')
+        .then(r => r.json())
+        .then(users => {
+          if (Array.isArray(users) && users.length > 0) {
+            registeredUsers = users;
+            localStorage.setItem('cached_known_faces', JSON.stringify(users));
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
+  function checkEmpIdAvailability() {
+    const inputVal = document.getElementById('employeeId').value.trim();
+    const feedback = document.getElementById('empIdFeedback');
+    if (!inputVal) {
+      feedback.style.display = 'none';
+      return;
+    }
+    const match = registeredUsers.find(u =>
+      String(u.employeeId || '').trim().toUpperCase() === inputVal.toUpperCase()
+    );
+    feedback.style.display = 'block';
+    if (match) {
+      feedback.innerHTML = `<span style="color:#f87171">❌ รหัส "${inputVal}" ถูกใช้งานแล้วโดยคุณ "${match.name}"</span>`;
+      btnSave.disabled = true;
+    } else {
+      feedback.innerHTML = `<span style="color:#34d399">✅ รหัส "${inputVal}" สามารถใช้งานได้</span>`;
+      btnSave.disabled = false;
+    }
+  }
 
   function verifyPin() {
     const input = document.getElementById('pinInput').value.trim();
@@ -395,10 +454,20 @@
     if (!name) return alert('กรุณากรอกชื่อ-นามสกุลพนักงาน');
     if (pin.length < 4) return alert('กรุณากำหนดรหัส PIN อย่างน้อย 4 หลักสำหรับพนักงานคนนี้');
 
+    // 1. มาตรการตรวจสอบรหัสพนักงานซ้ำก่อนดำเนินการ (Unique Employee ID Check)
+    const existingEmp = registeredUsers.find(u =>
+      String(u.employeeId || '').trim().toUpperCase() === empId.toUpperCase()
+    );
+    if (existingEmp) {
+      alert(`❌ รหัสพนักงานซ้ำ!\n\nรหัส "${empId}" มีอยู่ในระบบแล้ว (เป็นของคุณ "${existingEmp.name}")\nกรุณาใช้รหัสอื่นที่ไม่ซ้ำกัน`);
+      return;
+    }
+
     btnSave.disabled = true;
     btnSave.innerHTML = '⏳ กำลังวิเคราะห์และบันทึกใบหน้า...';
     msgDiv.innerText = '';
 
+    // 2. ตรวจสอบจำนวนใบหน้าในกล้อง (ป้องกันคนยืนซ้อนมากกว่า 1 คน)
     const detections = await faceapi
       .detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.50 }))
       .withFaceLandmarks()
@@ -421,6 +490,33 @@
     const detection = detections[0];
     const descriptorArray = Array.from(detection.descriptor);
 
+    // 3. มาตรการป้องกันใบหน้าซ้ำซ้อนระดับไบโอเมตริก (Anti-Duplicate Face Registration)
+    const queryNorm = l2normalize(detection.descriptor);
+    const DUPLICATE_FACE_THRESHOLD = 0.94; // ความเหมือนตั้งแต่ 94% ขึ้นไปถือว่าเป็นบุคคลคนเดียวกัน
+
+    let duplicateUser = null;
+    let highestSim = 0;
+
+    for (const u of registeredUsers) {
+      if (!u.descriptor || u.descriptor.length !== 128) continue;
+      const uDesc = (u.descriptor instanceof Float32Array) ? u.descriptor : l2normalize(new Float32Array(u.descriptor));
+      const sim = cosineSimilarity(queryNorm, uDesc);
+      if (sim > highestSim) {
+        highestSim = sim;
+        if (sim >= DUPLICATE_FACE_THRESHOLD) {
+          duplicateUser = u;
+        }
+      }
+    }
+
+    if (duplicateUser) {
+      const simPct = (highestSim * 100).toFixed(1);
+      alert(`❌ ปฏิเสธการลงทะเบียน: ตรวจพบใบหน้าซ้ำซ้อนในระบบ!\n\nใบหน้านี้ตรงกับคุณ "${duplicateUser.name}" (รหัส: ${duplicateUser.employeeId || '-'}, แผนก: ${duplicateUser.department || '-'}) ด้วยความเหมือน ${simPct}%\n\nระบบไม่อนุญาตให้ลงทะเบียนใบหน้าคนเดียวกันซ้ำซ้อน`);
+      btnSave.disabled = false;
+      btnSave.innerHTML = '📸 ถ่ายภาพและบันทึกใบหน้า';
+      return;
+    }
+
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
@@ -436,6 +532,13 @@
       });
       const data = await res.json();
 
+      if (data && data.success === false) {
+        alert('❌ เซิร์ฟเวอร์ปฏิเสธการลงทะเบียน: ' + (data.error || 'เกิดข้อผิดพลาด'));
+        btnSave.disabled = false;
+        btnSave.innerHTML = '📸 ถ่ายภาพและบันทึกใบหน้า';
+        return;
+      }
+
       // บันทึกข้อมูลลงแคชในเครื่องทันที
       try {
         const cached = JSON.parse(localStorage.getItem('cached_known_faces') || '[]');
@@ -449,6 +552,7 @@
           descriptor: descriptorArray
         });
         localStorage.setItem('cached_known_faces', JSON.stringify(cached));
+        registeredUsers = cached;
       } catch(e) {}
 
       msgDiv.innerHTML = '<span class="msg-success">🎉 ลงทะเบียนพนักงานสำเร็จเรียบร้อย! (รหัส: ' + empId + ' | PIN: ' + pin + ')</span>';
@@ -465,6 +569,7 @@
 
   window.addEventListener('load', () => {
     initTheme();
+    loadRegisteredUsers();
     if (API_URL) {
       fetch(API_URL + '?action=getConfig')
         .then(r => r.json())
