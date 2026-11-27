@@ -852,7 +852,8 @@
 
     if (selectedId === '__admin__') {
       // Admin Authentication: สิทธิ์ Admin ที่สามารถแก้ไข/ลบข้อมูลได้
-      if (pin === adminMasterPin || pin === '1234' || pin === '1122') {
+      const effectiveAdminPin = adminMasterPin || '1234';
+      if (pin === effectiveAdminPin) {
         isCurrentSessionAdmin = true;
         currentLoggedInUser = { role: 'Admin', name: 'ผู้ดูแลระบบ' };
         unlockView('admin');
@@ -865,9 +866,10 @@
       isCurrentSessionAdmin = false;
       const emp = registeredUsers.find(u => u.employeeId === selectedId);
       const correctPin = emp ? String(emp.pin || '').replace(/'/g, '') : '';
+      const effectiveAdminPin = adminMasterPin || '1234';
 
       // พนักงานต้องใส่ PIN 4 หลักของตัวเอง (หรือ Master Admin PIN)
-      if ((correctPin && pin === correctPin) || pin === adminMasterPin || pin === '1234' || pin === '1122') {
+      if ((correctPin && pin === correctPin) || pin === effectiveAdminPin) {
         currentLoggedInUser = emp ? { ...emp, role: 'พนักงานทั่วไป' } : { name: 'พนักงาน', employeeId: selectedId, role: 'พนักงานทั่วไป' };
         unlockView('employee');
       } else {
@@ -1212,6 +1214,7 @@
         method: 'POST',
         body: JSON.stringify({
           action: 'updateAttendance',
+          adminPin: adminMasterPin,
           employeeId: item.employeeId || '',
           name: item.name || '',
           date: item.date || '',
@@ -1243,7 +1246,8 @@
     // ยืนยันรหัสผ่าน Admin ก่อนลบเด็ดขาด ป้องกันคนอื่นกดเล่น
     const pin = prompt(`🔐 ยืนยันสิทธิ์ Admin ก่อนลบข้อมูล\n\nพนักงาน: ${item.name || '-'}\nวันที่: ${formatDisplayDate(item.date)}\nเวลา: ${formatDisplayTime(item.time)}\nประเภท: ${item.type || '-'}\n\nกรุณากรอกรหัสผ่าน Admin เพื่อยืนยันการลบ:`);
     if (pin === null) return; // กดยกเลิก
-    if (pin.trim() !== adminMasterPin && pin.trim() !== '1234' && pin.trim() !== '1122') {
+    const effectiveAdminPin = adminMasterPin || '1234';
+    if (pin.trim() !== effectiveAdminPin) {
       alert('❌ รหัสผ่าน Admin ไม่ถูกต้อง! ระบบยกเลิกคำสั่งลบรายการเพื่อความปลอดภัย');
       return;
     }
@@ -1268,6 +1272,7 @@
         method: 'POST',
         body: JSON.stringify({
           action: 'deleteAttendance',
+          adminPin: adminMasterPin,
           employeeId: item.employeeId || '',
           name: item.name || '',
           date: item.date || '',

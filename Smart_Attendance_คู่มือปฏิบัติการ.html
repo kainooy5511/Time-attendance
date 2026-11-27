@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกเวลาเข้างานอัจฉริยะ (Smart Attendance System v5.0) — คู่มือปฏิบัติการ สถาปัตยกรรม และการบริหารจัดการระบบ</title>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Sarabun', 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            line-height: 1.65;
+            margin: 2.54cm 3.17cm; /* Word Standard Page Margins */
+            background: #ffffff;
+            color: #1e293b;
+        }
+        h1 { 
+            font-size: 24pt; 
+            margin-top: 24pt; 
+            margin-bottom: 12pt; 
+            color: #1e3a8a; 
+            border-bottom: 2px solid #2563eb; 
+            padding-bottom: 6pt; 
+        }
+        h2 { 
+            font-size: 16.5pt; 
+            margin-top: 24pt; 
+            margin-bottom: 10pt; 
+            color: #1e40af; 
+            border-left: 5px solid #2563eb; 
+            padding-left: 12pt; 
+        }
+        h3 { 
+            font-size: 13.5pt; 
+            margin-top: 16pt; 
+            margin-bottom: 6pt; 
+            color: #1d4ed8; 
+        }
+        h4 { 
+            font-size: 11pt; 
+            margin-top: 12pt; 
+            margin-bottom: 4pt; 
+            color: #475569; 
+        }
+        p { 
+            margin: 8pt 0; 
+            font-size: 10.5pt; 
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 14pt 0;
+            font-size: 10pt;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8pt 10pt;
+            vertical-align: top;
+        }
+        th {
+            background-color: #1e3a8a;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        code, pre {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 9.5pt;
+            border-radius: 4px;
+        }
+        code {
+            background-color: #f1f5f9;
+            color: #1e3a8a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+        pre {
+            padding: 12pt 16pt;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            overflow-x: auto;
+            line-height: 1.5;
+            background: #f8fafc;
+            color: #0f172a;
+            margin: 10pt 0 14pt 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+        pre code {
+            background: transparent !important;
+            background-color: transparent !important;
+            color: #0f172a !important;
+            padding: 0 !important;
+            border: none !important;
+            border-radius: 0 !important;
+            font-size: 9.5pt !important;
+        }
+        .wireframe-box {
+            background: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #334155;
+            padding: 14pt;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 9.5pt;
+            line-height: 1.4;
+            overflow-x: auto;
+            margin: 12pt 0;
+        }
+        .note {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 10pt 14pt;
+            margin: 12pt 0;
+            font-size: 10pt;
+            border-radius: 0 4px 4px 0;
+        }
+        .tip {
+            background-color: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 10pt 14pt;
+            margin: 12pt 0;
+            font-size: 10pt;
+            border-radius: 0 4px 4px 0;
+        }
+        .warning {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 10pt 14pt;
+            margin: 12pt 0;
+            font-size: 10pt;
+            border-radius: 0 4px 4px 0;
+        }
+        .caution {
+            background-color: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 10pt 14pt;
+            margin: 12pt 0;
+            font-size: 10pt;
+            border-radius: 0 4px 4px 0;
+        }
+        hr {
+            margin: 22pt 0;
+            border: none;
+            border-top: 1px solid #cbd5e1;
+        }
+        .toc {
+            background: #f8fafc;
+            padding: 16pt 24pt;
+            margin: 20pt 0;
+            border: 1px solid #cbd5e1;
+            font-size: 10.5pt;
+            border-radius: 6px;
+        }
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .toc li {
+            margin: 6pt 0;
+        }
+        .toc a {
+            color: #2563eb;
+            text-decoration: none;
+            transition: color 0.15s;
+            font-weight: 500;
+        }
+        .toc a:hover {
+            color: #1e3a8a;
+            text-decoration: underline;
+        }
+        .toc ul ul {
+            padding-left: 24px;
+            margin-top: 4pt;
+        }
+        .toc ul ul li {
+            font-size: 9.5pt;
+            color: #64748b;
+        }
+        .mono {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9.5pt;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 8.5pt;
+            font-weight: 700;
+        }
+        .badge-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .badge-primary { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+        .badge-warning { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .badge-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        
+        /* Interactive Search Box */
+        .search-container {
+            background: #f1f5f9;
+            padding: 14pt 18pt;
+            border-radius: 8px;
+            margin: 20pt 0 10pt 0;
+            border: 1px solid #cbd5e1;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10pt 14pt;
+            font-size: 10.5pt;
+            border: 2px solid #94a3b8;
+            border-radius: 6px;
+            outline: none;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        .search-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+            background: #ffffff;
+        }
+        .search-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8pt;
+            font-size: 9pt;
+            color: #64748b;
+        }
+
+        mark.highlight {
+            background-color: #fef08a;
+            color: #854d0e;
+            padding: 1px 3px;
+            border-radius: 2px;
+            font-weight: bold;
+        }
+
+        /* Floating Back to Top Button */
+        #back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1e3a8a;
+            color: #ffffff;
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 9.5pt;
+            font-weight: bold;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+            z-index: 999;
+        }
+        #back-to-top:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        @media print {
+            body { margin: 1.5cm; }
+            .no-print, #back-to-top, .search-container { display: none !important; }
+            pre { background: #ffffff !important; border: 1px solid #cbd5e1 !important; color: #000000 !important; }
+            pre code { color: #000000 !important; }
+        }
+    </style>
+</head>
+<body id="top">
+
+<a href="#top" id="back-to-top" class="no-print">↑ กลับขึ้นด้านบน</a>
+
+<!-- Header & Document Metadata -->
+<div style="text-align: center; margin-bottom: 24pt;">
+    <h1 style="border-bottom: none; margin-bottom: 4pt;">ระบบบันทึกเวลาเข้างานอัจฉริยะ (Smart Attendance System v5.0)<br>คู่มือปฏิบัติการ สถาปัตยกรรม และการบริหารจัดการระบบ</h1>
+    <p style="font-size: 13.5pt; color: #334155; margin: 6pt 0;">Face Recognition · GPS Geofencing · PWA Mobile-First · Google Apps Script & Sheets Database · OT Engine</p>
+    <p style="font-size: 11pt; color: #475569;">เวอร์ชัน 5.0 Production | 10 พฤศจิกายน 2026 (ฉบับสมบูรณ์ผ่านการตรวจรับรองมาตรฐานไอที)</p>
+    <p style="font-size: 9.5pt; color: #64748b;">
+        รหัสเอกสาร: <strong>QS-MANUAL-ATTENDANCE-2026-PROD</strong> | ระดับความลับ: <strong>เอกสารควบคุมภายใน (Internal Confidential / IT Restricted)</strong>
+    </p>
+</div>
+
+<!-- ================================ กล่องค้นหาคำอัจฉริยะ ================================ -->
+<div class="search-container no-print">
+    <input type="text" id="manualSearchInput" class="search-input" onkeyup="filterManual()" placeholder="🔍 พิมพ์คำค้นหาด่วน เช่น: PIN, GPS, สแกนใบหน้า, OT, Google Sheets, Netlify, register, 08:30...">
+    <div class="search-meta">
+        <span id="searchResultCount">พิมพ์คำเพื่อค้นหาและไฮไลต์เนื้อหาแบบเรียลไทม์</span>
+        <span>กด <strong>Ctrl + P</strong> เพื่อพิมพ์หรือเซฟเป็น PDF</span>
+    </div>
+</div>
+
+<!-- ================================ ข้อมูลเอกสาร ================================ -->
+<table>
+    <tr>
+        <th style="width: 28%;">ข้อมูลเอกสาร</th>
+        <th>รายละเอียดมาตรฐาน</th>
+    </tr>
+    <tr>
+        <td><strong>รหัสเอกสาร</strong></td>
+        <td><span class="mono">QS-MANUAL-ATTENDANCE-2026-PROD</span></td>
+    </tr>
+    <tr>
+        <td><strong>เวอร์ชัน</strong></td>
+        <td>Version 5.0 Production (Enterprise Grade)</td>
+    </tr>
+    <tr>
+        <td><strong>วันที่ประกาศใช้</strong></td>
+        <td>10 พฤศจิกายน 2026</td>
+    </tr>
+    <tr>
+        <td><strong>ระดับความลับ</strong></td>
+        <td><span class="badge badge-danger">เอกสารควบคุมภายใน (Internal Restricted)</span></td>
+    </tr>
+    <tr>
+        <td><strong>หน่วยงานที่รับผิดชอบ</strong></td>
+        <td>ฝ่ายพัฒนาระบบและเทคโนโลยีสารสนเทศ (IT Development Team - NICE)</td>
+    </tr>
+    <tr>
+        <td><strong>ระบบที่ครอบคลุม</strong></td>
+        <td>Web PWA (HTML5/CSS3/Vanilla JS), AI Face Recognition (face-api.js), Google Apps Script Backend (code.gs), Google Sheets Database, Google Drive Photo Vault, และ Node.js Local Testing Server</td>
+    </tr>
+</table>
+
+<!-- ================================ บันทึกประวัติการปรับปรุง ================================ -->
+<h2 id="revision-history">บันทึกประวัติการปรับปรุงระบบ (Revision History)</h2>
+<table>
+    <tr>
+        <th style="width: 12%; text-align: center;">เวอร์ชัน</th>
+        <th style="width: 18%; text-align: center;">วันที่</th>
+        <th>รายละเอียดการปรับปรุง</th>
+        <th style="width: 22%;">ผู้รับผิดชอบ</th>
+    </tr>
+    <tr>
+        <td style="text-align: center;"><strong>v5.0</strong></td>
+        <td style="text-align: center;">10 พ.ย. 2026</td>
+        <td>
+            • ยกระดับระบบความปลอดภัย 2 ชั้น: รหัส PIN 4 หลักประจำตัวพนักงาน และ Admin PIN Gate ป้องกันการเข้าถึงโดยไม่ได้รับอนุญาต<br>
+            • พัฒนาระบบส่งภาพถ่ายใบหน้าขณะสแกน (Photo Snapshot) จัดเก็บลง Google Drive โฟลเดอร์ <span class="mono">Attendance_Snapshots</span> อัตโนมัติ<br>
+            • ปรับปรุงเอนจินคำนวณเวลาทำงานล่วงเวลา (OT Engine) และตรวจสถานะ มาสาย / ตรงเวลา อัตโนมัติ<br>
+            • เพิ่มระบบ Export รายงานประวัติเข้างานเป็นไฟล์ Excel (<span class="mono">.xlsx</span>) แท้ผ่าน SheetJS<br>
+            • พัฒนาระบบทำความสะอาดชีตอัตโนมัติ: ลบแถวว่าง (Clean Empty Rows) และล้างข้อมูลทดสอบ (Clean Mockup Data)<br>
+            • บรรจุสถาปัตยกรรม PWA รองรับการติดตั้งแบบ Add to Home Screen และ Local Node.js Dev Server
+        </td>
+        <td>IT Development Team (NICE)</td>
+    </tr>
+</table>
+
+<!-- ================================ สารบัญ ================================ -->
+<div class="toc">
+    <h3 style="margin-top: 0; color: #1e3a8a;">สารบัญเอกสาร (Table of Contents)</h3>
+    <ul>
+        <li><a href="#section-1">หมวดที่ 1: ภาพรวมระบบและฟีเจอร์เด่น (System Overview & Key Features)</a>
+            <ul>
+                <li><a href="#section-1-1">1.1 วัตถุประสงค์และประโยชน์ของระบบ</a></li>
+                <li><a href="#section-1-2">1.2 ตารางสรุปฟีเจอร์หลัก 8 ประการ</a></li>
+                <li><a href="#section-1-3">1.3 โครงสร้างเทคโนโลยี (Tech Stack Architecture)</a></li>
+            </ul>
+        </li>
+        <li><a href="#section-2">หมวดที่ 2: สถาปัตยกรรมระบบและการไหลของข้อมูล (System Architecture & Data Flow)</a>
+            <ul>
+                <li><a href="#section-2-1">2.1 ผังการทำงานภาพรวม (Architecture Diagram)</a></li>
+                <li><a href="#section-2-2">2.2 ลำดับการทำงานขณะสแกนลงเวลา (Sequence Diagram)</a></li>
+                <li><a href="#section-2-3">2.3 โครงสร้างฐานข้อมูล Google Sheets 3 แผ่นงาน</a></li>
+            </ul>
+        </li>
+        <li><a href="#section-3">หมวดที่ 3: คู่มือการใช้งานสำหรับพนักงานทั่วไป (Staff User Guide)</a>
+            <ul>
+                <li><a href="#section-3-1">3.1 การติดตั้งแอปพลิเคชันลงบนหน้าจอมือถือ (PWA Installation)</a></li>
+                <li><a href="#section-3-2">3.2 ขั้นตอนการสแกนใบหน้าเข้า-ออกงาน (Scan Attendance)</a></li>
+                <li><a href="#section-3-3">3.3 การตรวจสอบประวัติการลงเวลาส่วนบุคคลด้วยรหัส PIN</a></li>
+            </ul>
+        </li>
+        <li><a href="#section-4">หมวดที่ 4: คู่มือสำหรับฝ่ายบุคคลและผู้ดูแลระบบ (HR & Admin SOP)</a>
+            <ul>
+                <li><a href="#section-4-1">4.1 การเข้าสู่ระบบด้วย Admin PIN</a></li>
+                <li><a href="#section-4-2">4.2 การลงทะเบียนพนักงานและบันทึกใบหน้าใหม่ (register.html)</a></li>
+                <li><a href="#section-4-3">4.3 การตั้งค่าพิกัด GPS รัศมี และเวลางาน (config.html)</a></li>
+                <li><a href="#section-4-4">4.4 การตรวจสอบรายงาน คัดกรอง และดูรูปถ่ายหลักฐาน (history.html)</a></li>
+                <li><a href="#section-4-5">4.5 การแก้ไขและลบรายการลงเวลา (Edit/Delete Attendance)</a></li>
+                <li><a href="#section-4-6">4.6 การส่งออกรายงานเป็นไฟล์ Excel (.xlsx)</a></li>
+                <li><a href="#section-4-7">4.7 เครื่องมือทำความสะอาดฐานข้อมูล (Database Housekeeping)</a></li>
+            </ul>
+        </li>
+        <li><a href="#section-5">หมวดที่ 5: สถาปัตยกรรมเทคนิคและ API Reference (Developer Deep-Dive)</a>
+            <ul>
+                <li><a href="#section-5-1">5.1 กลไก AI Face Recognition (SSD MobileNet + 128D FaceNet)</a></li>
+                <li><a href="#section-5-2">5.2 สูตรคำนวณระยะพิกัด GPS (Haversine Formula)</a></li>
+                <li><a href="#section-5-3">5.3 รายละเอียด API Endpoints ของ Google Apps Script (code.gs)</a></li>
+                <li><a href="#section-5-4">5.4 การทำงานของ PWA Service Worker (sw.js)</a></li>
+                <li><a href="#section-5-5">5.5 การรันเซิร์ฟเวอร์จำลองในเครื่อง (Local Node.js Server server.cjs)</a></li>
+            </ul>
+        </li>
+        <li><a href="#section-6">หมวดที่ 6: ขั้นตอนการติดตั้งและการนำขึ้นระบบ (Installation & Deployment Runbook)</a></li>
+        <li><a href="#section-7">หมวดที่ 7: การแก้ไขปัญหาและคำถามที่พบบ่อย (Troubleshooting & FAQ)</a></li>
+    </ul>
+</div>
+
+<hr>
+
+<!-- ================================ หมวดที่ 1 ================================ -->
+<h2 id="section-1">หมวดที่ 1: ภาพรวมระบบและฟีเจอร์เด่น (System Overview & Key Features)</h2>
+
+<h3 id="section-1-1">1.1 วัตถุประสงค์และประโยชน์ของระบบ</h3>
+<p>ระบบ <strong>Smart Attendance v5.0</strong> ได้รับการออกแบบและพัฒนาขึ้นเพื่อแก้ปัญหาการลงเวลาทำงานแบบเดิม (เช่น การสแกนนิ้วมือที่ต้องสัมผัสร่วมกัน, การตอกบัตรที่ฝากกันตอกได้, หรือเครื่องสแกนราคาแพงที่เชื่อมต่อข้อมูลยาก):</p>
+<ol>
+    <li><strong>ป้องกันการลงเวลาแทนกัน 100% (Zero Proxy Punch):</strong> ใช้โมเดลปัญญาประดิษฐ์ตรวจจับและสกัดเวกเตอร์โครงสร้างใบหน้า 128 มิติ พร้อมบันทึกภาพถ่าย Snapshot เข้าสู่ระบบ Google Drive ทันที</li>
+    <li><strong>ป้องกันการเช็คอินนอกสถานที่ (Zero GPS Spoofing):</strong> ระบบตรวจสอบพิกัด Geolocation ด้วยสูตร Haversine หากอยู่นอกรัศมีที่บริษัทกำหนด (Allowed Radius) ระบบจะล็อกไม่ให้สแกน</li>
+    <li><strong>โครงสร้าง Serverless ไร้ค่าใช้จ่ายเซิร์ฟเวอร์ (Zero Hosting Cost):</strong> ใช้งาน Frontend Static บน Netlify คู่กับ Backend Google Apps Script และฐานข้อมูล Google Sheets ไม่ต้องเช่า Cloud Server รายเดือน</li>
+    <li><strong>ความปลอดภัยของข้อมูลส่วนบุคคล (Privacy & Access Control):</strong> พนักงานแต่ละคนมีรหัส PIN 4 หลักเพื่อเข้าดูประวัติเฉพาะตนเอง ส่วนฝ่ายบุคคลมี Admin PIN เพื่อเข้าถึงเมนูลงทะเบียนและแก้ไขข้อมูล</li>
+</ol>
+
+<h3 id="section-1-2">1.2 ตารางสรุปฟีเจอร์หลัก 8 ประการ</h3>
+<table>
+    <tr>
+        <th style="width: 8%; text-align: center;">ลำดับ</th>
+        <th style="width: 24%;">ฟีเจอร์หลัก</th>
+        <th style="width: 42%;">รายละเอียดความสามารถ</th>
+        <th>ประโยชน์ต่อองค์กร</th>
+    </tr>
+    <tr>
+        <td style="text-align: center;"><strong>1</strong></td>
+        <td><strong>Face Recognition AI</strong></td>
+        <td>ใช้โมเดล SSD MobileNetV1 ตรวจจับตำแหน่งใบหน้า และ FaceNet สกัดเวกเตอร์ 128D (Threshold 0.45)</td>
+        <td>ระบุตัวตนได้แม่นยำภายใน 500ms ป้องกันการทุจริต</td>
+    </tr>
+    <tr>
+        <td style="text-align: center;"><strong>2</strong></td>
+        <td><strong>GPS Geofencing</strong></td>
+        <td>ตรวจสอบพิกัดละติจูด/ลองจิจูดของผู้ใช้งานเทียบกับจุดพิกัดบริษัทแบบเรียลไทม์</td>
+        <td>บังคับให้พนักงานต้องอยู่ในพื้นที่บริษัทจริงเท่านั้น</td>
+    </tr>
+    <tr>
+        <td style="text-align: center;"><strong>3</strong></td>
+        <td><strong>PWA Mobile-First</strong></td>
+        <td>รองรับ Progressive Web App ติดตั้งเป็นไอคอนบนมือถือได้ทั้ง iOS และ Android</td>
+        <td>ใช้งานสะดวกเหมือนแอปพลิเคชันจริง ไม่ต้องโหลดผ่านสโตร์</td>
+    </tr>
+    <tr>
+        <td style="text-align: center;"><strong>4</strong></td>
+        <td><strong>Google Drive Vault</strong></td>
+        <td>แปลงภาพใบหน้าขณะสแกนเป็นไฟล์ JPEG อัปโหลดเข้าโฟลเดอร์ <span class="mono">Attendance_Snapshots</span></td>
+        <td>มีหลักฐานภาพถ่ายยืนยันทุกครั้งที่เข้างาน</td>
+    </tr>
+    <tr>
+        <td style="text-align: center;"><strong>5</strong></td>
+        <td><strong>OT & Shift Engine</strong></td>
+        <td>คำนวณสถานะ "ตรงเวลา", "มาสาย" และนับชั่วโมงการทำงานล่วงเวลา (OT) อัตโนมัติ</td>
+        <td>ลดภาระงานคำนวณเวลาของฝ่ายบุคคล (HR)</td>
+    </tr>
+    <tr>
+        <td style="text-align: center;"><strong>6</strong></td>
+        <td><strong>Genuine Excel Export</strong></td>
+        <td>ฝังไลบรารี SheetJS ส่งออกประวัติเข้างานเป็นไฟล์ <span class="mono">.xlsx</span> แท้พร้อมฟอร์แมตวันที่</td>
+        <td>สามารถนำข้อมูลไปประมวลผลต่อใน Excel / Payroll ได้ทันที</td>
+    </tr>
+    <tr>
+        <td style="text-align: center;"><strong>7</strong></td>
+        <td><strong>PIN Gate Security</strong></td>
+        <td>ระบบล็อกหน้าประวัติด้วย PIN พนักงาน 4 หลัก และล็อกหน้า Admin ด้วยรหัสผ่าน Admin</td>
+        <td>รักษาความลับข้อมูลเงินเดือนและเวลาทำงานตามกฎหมาย PDPA</td>
+    </tr>
+    <tr>
+        <td style="text-align: center;"><strong>8</strong></td>
+        <td><strong>Auto Data Hygiene</strong></td>
+        <td>ฟังก์ชัน <span class="mono">cleanEmptyRows</span> และ <span class="mono">cleanMockupData</span> ทำความสะอาดชีตอัตโนมัติ</td>
+        <td>ป้องกันตารางกระโดดข้ามแถวและลบข้อมูลขยะอัตโนมัติ</td>
+    </tr>
+</table>
+
+<h3 id="section-1-3">1.3 โครงสร้างเทคโนโลยี (Tech Stack Architecture)</h3>
+<div class="wireframe-box">
+[Client / Mobile Browser]
+       │
+       ├── Progressive Web App (PWA) + Service Worker (sw.js)
+       ├── UI: HTML5, CSS3 Glassmorphism, Google Sarabun Font
+       ├── AI: face-api.js v0.22.2 (TensorFlow.js WebAssembly / WebGL)
+       ├── Location: W3C Geolocation API (Haversine Distance Check)
+       └── Export: SheetJS v0.18.5 (.xlsx Full Engine)
+       │
+       ▼ (HTTPS REST / JSON API)
+[Google Apps Script Web App - code.gs V5]
+       │
+       ├── doGet(e)  : getConfig, getKnownFaces, getAttendance, cleanEmptyRows
+       └── doPost(e) : registerUser, logAttendance, saveConfig, deleteAttendance, updateAttendance
+       │
+       ├───▶ [Google Sheets Database] : Users, Attendance, Config
+       └───▶ [Google Drive Storage]   : Attendance_Snapshots/ (รูปถ่ายหลักฐาน)
+</div>
+
+<hr>
+
+<!-- ================================ หมวดที่ 2 ================================ -->
+<h2 id="section-2">หมวดที่ 2: สถาปัตยกรรมระบบและการไหลของข้อมูล (System Architecture & Data Flow)</h2>
+
+<h3 id="section-2-1">2.1 ผังการทำงานภาพรวม (Architecture Diagram)</h3>
+<div class="wireframe-box">
++-----------------------------------------------------------------------------------+
+|               อุปกรณ์ของผู้ใช้งาน (Mobile / Tablet / PC Browser)                   |
++-----------------------------------------------------------------------------------+
+  index.html (หน้าหลัก)    scan.html (สแกนใบหน้า)    history.html (ประวัติลงเวลา)
+  register.html (ลงทะเบียน)  config.html (ตั้งค่า)
+                                    │
+                                    │ HTTPS REST JSON (doGet / doPost)
+                                    ▼
++-----------------------------------------------------------------------------------+
+|               Google Cloud Serverless Infrastructure (code.gs V5)                 |
++-----------------------------------------------------------------------------------+
+        │                                                   │
+        │ อัปโหลดภาพถ่าย Snapshot                           │ อ่าน/เขียนข้อมูล
+        ▼                                                   ▼
++-------------------------------+                   +-------------------------------+
+|  Google Drive Storage         |                   |  Google Sheets Database       |
+|  โฟลเดอร์: Attendance_Snapshots |                   |  Users / Attendance / Config  |
++-------------------------------+                   +-------------------------------+
+</div>
+
+<h3 id="section-2-2">2.2 ลำดับการทำงานขณะสแกนลงเวลา (Sequence Timeline)</h3>
+<div class="wireframe-box">
+1. พนักงานเปิดหน้า scan.html -> ระบบดึง Config และข้อมูลพนักงาน (getKnownFaces) จาก Google Sheets
+2. ระบบอ่านพิกัด Geolocation จากมือถือ -> คำนวณระยะห่างด้วยสูตร Haversine
+   - หากอยู่นอกรัศมี: แสดงกล่องเตือนสีแดง และระงับการเปิดกล้อง
+   - หากอยู่ในรัศมี: แสดงสถานะ "อยู่ในพื้นที่บริษัท" และเปิดกล้องอัตโนมัติ
+3. พนักงานส่องหน้าเข้าหากล้อง -> AI (face-api.js) ตรวจจับใบหน้าและเทียบเวกเตอร์ 128 มิติ
+4. เมื่อค่าความคลาดเคลื่อนน้อยกว่า 0.45 -> ยืนยันตัวตนสำเร็จ แสดงชื่อ-นามสกุล
+5. พนักงานกดยืนยัน (หรือระบบนับถอยหลัง) -> ส่ง POST ไปยัง code.gs
+6. code.gs ถอดรหัสภาพ Base64 เซฟเป็นไฟล์ JPEG ลง Google Drive (Attendance_Snapshots)
+7. code.gs บันทึกข้อมูล (รหัส, ชื่อ, เวลา, วันที่, สถานะปกติ/สาย, ชั่วโมง OT, พิกัด, ลิงก์รูป) ลง Google Sheets
+8. หน้าจอแสดงผล "บันทึกสำเร็จ" พร้อมส่งเสียงแจ้งเตือน
+</div>
+
+<h3 id="section-2-3">2.3 โครงสร้างฐานข้อมูล Google Sheets 3 แผ่นงาน</h3>
+
+<h4>1. แผ่นงาน Users (ข้อมูลพนักงานและเวกเตอร์ใบหน้า)</h4>
+<table>
+    <tr>
+        <th>คอลัมน์</th>
+        <th>ชื่อฟิลด์</th>
+        <th>ชนิดข้อมูล</th>
+        <th>ตัวอย่างข้อมูล</th>
+        <th>คำอธิบาย</th>
+    </tr>
+    <tr>
+        <td><strong>A</strong></td>
+        <td><span class="mono">Emp ID</span></td>
+        <td>String</td>
+        <td>EMP001</td>
+        <td>รหัสประจำตัวพนักงาน</td>
+    </tr>
+    <tr>
+        <td><strong>B</strong></td>
+        <td><span class="mono">Name</span></td>
+        <td>String</td>
+        <td>สมชาย ใจดี</td>
+        <td>ชื่อ-นามสกุลพนักงาน</td>
+    </tr>
+    <tr>
+        <td><strong>C</strong></td>
+        <td><span class="mono">Department</span></td>
+        <td>String</td>
+        <td>ฝ่ายขายและการตลาด</td>
+        <td>แผนกหรือฝ่ายที่สังกัด</td>
+    </tr>
+    <tr>
+        <td><strong>D</strong></td>
+        <td><span class="mono">Role</span></td>
+        <td>String</td>
+        <td>พนักงานทั่วไป / ผู้ดูแลระบบ</td>
+        <td>ระดับสิทธิ์การเข้าถึง</td>
+    </tr>
+    <tr>
+        <td><strong>E</strong></td>
+        <td><span class="mono">PIN</span></td>
+        <td>String</td>
+        <td>'1234</td>
+        <td>รหัส PIN 4 หลักสำหรับดูประวัติส่วนตัว</td>
+    </tr>
+    <tr>
+        <td><strong>F</strong></td>
+        <td><span class="mono">Face Descriptor</span></td>
+        <td>JSON Array</td>
+        <td>[-0.124, 0.089, ... 128 มิติ]</td>
+        <td>เวกเตอร์โครงสร้างใบหน้า 128 มิติ</td>
+    </tr>
+    <tr>
+        <td><strong>G</strong></td>
+        <td><span class="mono">Registered At</span></td>
+        <td>Datetime</td>
+        <td>2026-11-10 08:30:00</td>
+        <td>วันเวลาที่ลงทะเบียน</td>
+    </tr>
+</table>
+
+<h4>2. แผ่นงาน Attendance (ประวัติการลงเวลาเข้า-ออกงาน)</h4>
+<table>
+    <tr>
+        <th>คอลัมน์</th>
+        <th>ชื่อฟิลด์</th>
+        <th>ชนิดข้อมูล</th>
+        <th>ตัวอย่างข้อมูล</th>
+        <th>คำอธิบาย</th>
+    </tr>
+    <tr>
+        <td><strong>A</strong></td>
+        <td><span class="mono">Emp ID</span></td>
+        <td>String</td>
+        <td>EMP001</td>
+        <td>รหัสพนักงานที่สแกน</td>
+    </tr>
+    <tr>
+        <td><strong>B</strong></td>
+        <td><span class="mono">Name</span></td>
+        <td>String</td>
+        <td>สมชาย ใจดี</td>
+        <td>ชื่อพนักงาน</td>
+    </tr>
+    <tr>
+        <td><strong>C</strong></td>
+        <td><span class="mono">Department</span></td>
+        <td>String</td>
+        <td>ฝ่ายขายและการตลาด</td>
+        <td>แผนก</td>
+    </tr>
+    <tr>
+        <td><strong>D</strong></td>
+        <td><span class="mono">Type</span></td>
+        <td>String</td>
+        <td>เข้างาน (Check-In) / ออกงาน / เริ่ม OT</td>
+        <td>ประเภทของการลงเวลา</td>
+    </tr>
+    <tr>
+        <td><strong>E</strong></td>
+        <td><span class="mono">Time</span></td>
+        <td>Time</td>
+        <td>08:25:10</td>
+        <td>เวลาที่บันทึก (ชั่วโมง:นาที:วินาที)</td>
+    </tr>
+    <tr>
+        <td><strong>F</strong></td>
+        <td><span class="mono">Date</span></td>
+        <td>Date</td>
+        <td>10/11/2026</td>
+        <td>วันที่บันทึก (วัน/เดือน/ปี)</td>
+    </tr>
+    <tr>
+        <td><strong>G</strong></td>
+        <td><span class="mono">Status</span></td>
+        <td>String</td>
+        <td>ปกติ / สาย (Late)</td>
+        <td>สถานะการเข้างานเทียบกับเวลาเริ่มงาน</td>
+    </tr>
+    <tr>
+        <td><strong>H</strong></td>
+        <td><span class="mono">OT Hours</span></td>
+        <td>Number</td>
+        <td>2.5</td>
+        <td>จำนวนชั่วโมงทำงานล่วงเวลา</td>
+    </tr>
+    <tr>
+        <td><strong>I - L</strong></td>
+        <td><span class="mono">GPS & Links</span></td>
+        <td>Lat, Lng, Map, Photo</td>
+        <td>พิกัดจริง และลิงก์ Drive</td>
+        <td>หลักฐานพิกัดและรูปถ่าย snapshot</td>
+    </tr>
+</table>
+
+<h4>3. แผ่นงาน Config (การตั้งค่าระบบ)</h4>
+<table>
+    <tr>
+        <th>พารามิเตอร์ (Col A)</th>
+        <th>ค่าที่ตั้ง (Col B)</th>
+        <th>ค่าเริ่มต้น</th>
+        <th>คำอธิบาย</th>
+    </tr>
+    <tr>
+        <td><strong>Target Latitude</strong></td>
+        <td><span class="mono">13.756300</span></td>
+        <td>พิกัดออฟฟิศ</td>
+        <td>ละติจูดจุดเช็คอินของบริษัท</td>
+    </tr>
+    <tr>
+        <td><strong>Target Longitude</strong></td>
+        <td><span class="mono">100.501800</span></td>
+        <td>พิกัดออฟฟิศ</td>
+        <td>ลองจิจูดจุดเช็คอินของบริษัท</td>
+    </tr>
+    <tr>
+        <td><strong>Allowed Radius (KM)</strong></td>
+        <td><span class="mono">0.1</span></td>
+        <td>0.5</td>
+        <td>รัศมีที่อนุญาต (0.1 = 100 เมตร, 0 = ปิดตรวจ GPS)</td>
+    </tr>
+    <tr>
+        <td><strong>Work Start Time</strong></td>
+        <td><span class="mono">'08:30</span></td>
+        <td>08:30</td>
+        <td>เวลาเริ่มงานปกติ (สแกนหลังเวลานี้จะขึ้น "สาย")</td>
+    </tr>
+    <tr>
+        <td><strong>OT Start Time</strong></td>
+        <td><span class="mono">'17:00</span></td>
+        <td>17:00</td>
+        <td>เวลาเริ่มคิดโอทีสำหรับการออกงานช่วงค่ำ</td>
+    </tr>
+    <tr>
+        <td><strong>Admin PIN</strong></td>
+        <td><span class="mono">'1234</span></td>
+        <td>1234</td>
+        <td>รหัสผ่านสำหรับ Admin เข้าหน้า Config/Register</td>
+    </tr>
+</table>
+
+<hr>
+
+<!-- ================================ หมวดที่ 3 ================================ -->
+<h2 id="section-3">หมวดที่ 3: คู่มือการใช้งานสำหรับพนักงานทั่วไป (Staff User Guide)</h2>
+
+<h3 id="section-3-1">3.1 การติดตั้งแอปพลิเคชันลงบนหน้าจอมือถือ (PWA Installation)</h3>
+<p>เพื่อให้ใช้งานสะดวก รวดเร็ว และไม่ต้องพิมพ์ URL ซ้ำๆ พนักงานสามารถติดตั้งระบบเป็นแอปบนมือถือได้ทันที:</p>
+<ul>
+    <li><strong>สำหรับ iPhone / iPad (iOS Safari):</strong><br>
+    เปิด Safari ไปที่ลิงก์ระบบ -> กดปุ่ม <strong>[แชร์ (Share)]</strong> ด้านล่าง -> เลือก <strong>[เพิ่มไปยังหน้าจอโฮม (Add to Home Screen)]</strong> -> กดปุ่ม <strong>[เพิ่ม (Add)]</strong></li>
+    <li><strong>สำหรับ Android (Google Chrome):</strong><br>
+    เปิด Chrome เข้าลิงก์ระบบ -> กดจุด 3 จุด (⋮) มุมขวาบน -> เลือก <strong>[ติดตั้งแอป (Install App)]</strong> หรือ <strong>[เพิ่มลงในหน้าจอหลัก]</strong></li>
+</ul>
+
+<h3 id="section-3-2">3.2 ขั้นตอนการสแกนใบหน้าเข้า-ออกงาน (Scan Attendance)</h3>
+<ol>
+    <li>เปิดแอป <strong>"ลงเวลา"</strong> จากหน้าจอมือถือ -> เข้าสู่หน้าหลัก (<span class="mono">index.html</span>)</li>
+    <li>กดเลือกการ์ดขนาดใหญ่ด้านบน <strong>"สแกนใบหน้าลงเวลา (Face Scan Attendance)"</strong> (<span class="mono">scan.html</span>)</li>
+    <li>ระบบตรวจสอบตำแหน่ง GPS อัตโนมัติ: หากขึ้นแถบสีเขียว <strong>"อยู่ในพื้นที่บริษัท"</strong> กล้องจะเปิดทันที</li>
+    <li>เลือกประเภทงาน: <strong>เข้างาน</strong> / <strong>ออกงาน</strong> / <strong>เข้างาน OT</strong> / <strong>ออกงาน OT</strong></li>
+    <li>ส่องใบหน้าให้ตรงกับกรอบสีเขียวบนหน้าจอในระยะ 40 – 60 ซม. (ถอดแว่นกันแดด/แมสก์ชั่วคราว)</li>
+    <li>เมื่อระบบตรวจพบใบหน้าตรงกัน จะแสดงชื่อ-นามสกุล -> กดปุ่ม <strong>"ยืนยันเข้างาน"</strong> (หรือรอระบบนับถอยหลัง)</li>
+    <li>เมื่อขึ้นข้อความสีเขียว <strong>"บันทึกสำเร็จ"</strong> เป็นอันเสร็จสิ้นขั้นตอน</li>
+</ol>
+
+<h3 id="section-3-3">3.3 การตรวจสอบประวัติการลงเวลาส่วนบุคคลด้วยรหัส PIN</h3>
+<ol>
+    <li>จากหน้าหลัก กดเลือกเมนู <strong>"ประวัติบันทึกเวลา"</strong> (<span class="mono">history.html</span>)</li>
+    <li>กรอก <strong>"รหัส PIN 4 หลักประจำตัว"</strong> ที่ได้รับตอนลงทะเบียน</li>
+    <li>ระบบจะกรองและแสดงผล <strong>เฉพาะรายการลงเวลาของตัวพนักงานเองเท่านั้น</strong> โดยไม่แสดงข้อมูลของผู้อื่น เพื่อความเป็นส่วนตัวสูงสุด</li>
+</ol>
+
+<hr>
+
+<!-- ================================ หมวดที่ 4 ================================ -->
+<h2 id="section-4">หมวดที่ 4: คู่มือสำหรับฝ่ายบุคคลและผู้ดูแลระบบ (HR & Admin SOP)</h2>
+
+<h3 id="section-4-1">4.1 การเข้าสู่ระบบด้วย Admin PIN</h3>
+<div class="warning">
+    <strong>ข้อกำหนดความปลอดภัยสำหรับฝ่ายบุคคล:</strong><br>
+    เมนูของผู้ดูแลระบบ (Admin) ทั้งหน้าลงทะเบียนพนักงาน (<span class="mono">register.html</span>), หน้าตั้งค่าระบบ (<span class="mono">config.html</span>), และการแก้ไข/ลบข้อมูล จะต้องใช้ <strong>Admin PIN (รหัสเริ่มต้น: 1234)</strong> เพื่อปลดล็อกทุกครั้ง
+</div>
+
+<h3 id="section-4-2">4.2 การลงทะเบียนพนักงานและบันทึกใบหน้าใหม่ (register.html)</h3>
+<ol>
+    <li>เข้าหน้า <strong>"ลงทะเบียนพนักงาน"</strong> และกรอก Admin PIN</li>
+    <li>กรอกข้อมูล: <strong>รหัสพนักงาน (Emp ID)</strong>, <strong>รหัส PIN 4 หลักของพนักงาน</strong>, <strong>ระดับสิทธิ์ (Role)</strong>, <strong>แผนก</strong>, และ <strong>ชื่อ-นามสกุล</strong></li>
+    <li>ให้พนักงานยืนส่องหน้าตรงกับกล้องในที่สว่าง</li>
+    <li>เมื่อระบบตรวจจับใบหน้าได้ ปุ่ม <strong>"ถ่ายภาพและบันทึกใบหน้า"</strong> จะเปลี่ยนเป็นสีน้ำเงินพร้อมกด</li>
+    <li>กดปุ่มบันทึก 1 ครั้ง -> ระบบจะคำนวณเวกเตอร์ 128 มิติ และส่งไปจัดเก็บลงชีต <span class="mono">Users</span> ทันที</li>
+</ol>
+
+<h3 id="section-4-3">4.3 การตั้งค่าพิกัด GPS รัศมี และเวลางาน (config.html)</h3>
+<ul>
+    <li><strong>จุดเช็คอิน GPS:</strong> หากยืนอยู่ที่ออฟฟิศ ให้กดปุ่ม <strong>"ดึงตำแหน่งปัจจุบัน (Get Current Location)"</strong> ระบบจะดึงพิกัดจริงมาใส่ในช่อง Lat/Lng ทันที</li>
+    <li><strong>รัศมีที่ยอมรับ (Allowed Radius):</strong> แนะนำตั้งที่ <span class="mono">0.1</span> (100 เมตร) หรือ <span class="mono">0.05</span> (50 เมตร) สำหรับตึกสำนักงาน (หากใส่ 0 คือปิดตรวจ GPS)</li>
+    <li><strong>เวลาเริ่มงานปกติ:</strong> เช่น <span class="mono">08:30</span> (สแกนหลังเวลานี้จะขึ้นสถานะ "สาย")</li>
+    <li><strong>เวลาเริ่มคิด OT:</strong> เช่น <span class="mono">17:00</span> (ระบบจะคำนวณชั่วโมง OT อัตโนมัติเมื่อออกงานหลัง 17:00)</li>
+    <li><strong>เปลี่ยน Admin PIN:</strong> กรอกรหัสใหม่ในช่อง Admin PIN แล้วกดบันทึก</li>
+</ul>
+
+<h3 id="section-4-4">4.4 การตรวจสอบรายงาน คัดกรอง และดูรูปถ่ายหลักฐาน (history.html)</h3>
+<p>ผู้ดูแลระบบสามารถกรอก Admin PIN ในหน้า <span class="mono">history.html</span> เพื่อดูข้อมูลพนักงานทุกคน คัดกรองตามวันที่ แผนก หรือสถานะ พร้อมคลิกดูรูปถ่าย Snapshot และเปิดพิกัดจริงบน Google Maps ได้ทุกรายการ</p>
+
+<h3 id="section-4-5">4.5 การแก้ไขและลบรายการลงเวลา (Edit/Delete Attendance)</h3>
+<ul>
+    <li><strong>แก้ไขเวลา/สถานะ:</strong> คลิกปุ่ม <strong>[แก้ไข]</strong> ที่รายการ -> ปรับเปลี่ยนเวลา ประเภท หรือชั่วโมง OT -> กดยืนยัน ข้อมูลใน Google Sheets จะอัปเดตทันที</li>
+    <li><strong>ลบรายการ:</strong> คลิกปุ่ม <strong>[ลบ]</strong> เพื่อตัดรายการที่พนักงานกดซ้ำซ้อนทิ้ง</li>
+</ul>
+
+<h3 id="section-4-6">4.6 การส่งออกรายงานเป็นไฟล์ Excel (.xlsx)</h3>
+<p>คลิกปุ่มสีเขียว <strong>"ส่งออก Excel (.xlsx)"</strong> ในหน้า <span class="mono">history.html</span> ระบบจะสร้างไฟล์ Excel แท้พร้อมฟอร์แมตวันที่ ดาวน์โหลดลงเครื่องคอมพิวเตอร์พร้อมนำเข้าโปรแกรมเงินเดือนได้ทันที</p>
+
+<h3 id="section-4-7">4.7 เครื่องมือทำความสะอาดฐานข้อมูล (Database Housekeeping)</h3>
+<ul>
+    <li><strong>ลบแถวว่างในชีต (Clean Empty Rows):</strong> สแกนและลบแถวว่างในชีต Attendance ให้ตารางชิดติดกัน ไม่เกิดปัญหาตารางกระโดดข้ามแถว</li>
+    <li><strong>ล้างข้อมูลทดสอบ (Clean Mockup Data):</strong> ล้างข้อมูลจำลองช่วงติดตั้งระบบ คงเหลือเฉพาะข้อมูลจริงที่พร้อมใช้งาน 100%</li>
+</ul>
+
+<hr>
+
+<!-- ================================ หมวดที่ 5 ================================ -->
+<h2 id="section-5">หมวดที่ 5: สถาปัตยกรรมเทคนิคและ API Reference (Developer Deep-Dive)</h2>
+
+<h3 id="section-5-1">5.1 กลไก AI Face Recognition (SSD MobileNet + 128D FaceNet)</h3>
+<p>การรู้จำใบหน้าใช้ไลบรารี <strong>face-api.js</strong> บน TensorFlow.js WebAssembly:</p>
+<pre><code>// โหลดโมเดล AI Face Detection & Recognition
+await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+
+// ตรวจจับใบหน้าและสกัดเวกเตอร์ 128 มิติ
+const detection = await faceapi.detectSingleFace(video)
+  .withFaceLandmarks()
+  .withFaceDescriptor();
+
+// คำนวณ Euclidean Distance เทียบกับพนักงานในชีต
+const distance = faceapi.euclideanDistance(detection.descriptor, knownDescriptor);
+if (distance &lt; 0.45) {
+  // ยืนยันตัวตนสำเร็จ
+}</code></pre>
+
+<h3 id="section-5-2">5.2 สูตรคำนวณระยะพิกัด GPS (Haversine Formula)</h3>
+<pre><code>function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  var R = 6371; // รัศมีโลกเฉลี่ย (กิโลเมตร)
+  var dLat = deg2rad(lat2 - lat1);
+  var dLon = deg2rad(lon2 - lon1);
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // ระยะทางจริงในหน่วยกิโลเมตร
+}</code></pre>
+
+<h3 id="section-5-3">5.3 รายละเอียด API Endpoints ของ Google Apps Script (code.gs)</h3>
+<table>
+    <tr>
+        <th>Method</th>
+        <th>Action Name</th>
+        <th>พารามิเตอร์ / Payload</th>
+        <th>คำอธิบาย</th>
+    </tr>
+    <tr>
+        <td><strong>GET</strong></td>
+        <td><span class="mono">getConfig</span></td>
+        <td>?action=getConfig</td>
+        <td>ดึงพิกัด Lat/Lng, รัศมี, เวลางาน, Admin PIN</td>
+    </tr>
+    <tr>
+        <td><strong>GET</strong></td>
+        <td><span class="mono">getKnownFaces</span></td>
+        <td>?action=getKnownFaces</td>
+        <td>ดึงรายชื่อพนักงานและเวกเตอร์ 128D ทั้งหมด</td>
+    </tr>
+    <tr>
+        <td><strong>GET</strong></td>
+        <td><span class="mono">getAttendance</span></td>
+        <td>?action=getAttendance</td>
+        <td>ดึงประวัติเข้างานทั้งหมดเรียงจากล่าสุด</td>
+    </tr>
+    <tr>
+        <td><strong>GET</strong></td>
+        <td><span class="mono">cleanEmptyRows</span></td>
+        <td>?action=cleanEmptyRows</td>
+        <td>ลบแถวว่างทั้งหมดในชีต Attendance</td>
+    </tr>
+    <tr>
+        <td><strong>POST</strong></td>
+        <td><span class="mono">registerUser</span></td>
+        <td>{ employeeId, name, dept, role, pin, faceDescriptor }</td>
+        <td>ลงทะเบียนพนักงานและเวกเตอร์ลงชีต Users</td>
+    </tr>
+    <tr>
+        <td><strong>POST</strong></td>
+        <td><span class="mono">logAttendance</span></td>
+        <td>{ employeeId, name, type, lat, lng, photoBase64, ... }</td>
+        <td>บันทึกเวลาลง Attendance และอัปโหลดภาพเข้า Drive</td>
+    </tr>
+    <tr>
+        <td><strong>POST</strong></td>
+        <td><span class="mono">saveConfig</span></td>
+        <td>{ lat, lng, radius, workStartTime, otStartTime, adminPin }</td>
+        <td>บันทึกการตั้งค่าลงชีต Config</td>
+    </tr>
+</table>
+
+<h3 id="section-5-4">5.4 การทำงานของ PWA Service Worker (sw.js)</h3>
+<p>Service Worker แคชไฟล์ UI Shell (<span class="mono">index.html</span>, <span class="mono">scan.html</span>, ไอคอน, manifest) เพื่อให้เปิดแอปได้ทันทีแม้เน็ตหลุด และใช้กลยุทธ์ Network-First สำหรับข้อมูลการลงเวลา</p>
+
+<h3 id="section-5-5">5.5 การรันเซิร์ฟเวอร์จำลองในเครื่อง (Local Node.js Server server.cjs)</h3>
+<pre><code># ติดตั้งและเริ่มต้นเซิร์ฟเวอร์จำลอง
+npm install
+node server.cjs
+
+# เปิดใช้งานที่ http://localhost:3008 (จำลองผ่าน local_db.json)</code></pre>
+
+<hr>
+
+<!-- ================================ หมวดที่ 6 ================================ -->
+<h2 id="section-6">หมวดที่ 6: ขั้นตอนการติดตั้งและการนำขึ้นระบบ (Installation & Deployment Runbook)</h2>
+<ol>
+    <li><strong>สร้าง Google Sheets & Apps Script:</strong> สร้าง Google Sheets ใหม่ -> Extensions -> Apps Script -> วางโค้ด <span class="mono">code.gs</span> -> รันฟังก์ชัน <span class="mono">setupAndCreateSheets</span> เพื่อสร้างหัวตาราง</li>
+    <li><strong>Deploy Web App:</strong> กด Deploy -> New deployment -> Web app -> Execute as: <strong>Me</strong> -> Who has access: <strong>Anyone</strong> -> คัดลอก Web App URL</li>
+    <li><strong>ตั้งค่า api-config.js:</strong> นำ Web App URL ไปวางในตัวแปร <span class="mono">GAS_API_URL</span> ในไฟล์ <span class="mono">js/api-config.js</span></li>
+    <li><strong>Deploy ขึ้น Netlify:</strong> ลากโฟลเดอร์โครงการไปวางที่ <span class="mono">app.netlify.com/drop</span> เพื่อรับ URL ที่มี HTTPS ทันที</li>
+    <li><strong>ตั้งค่าครั้งแรก:</strong> เข้าหน้า <span class="mono">config.html</span> ใส่ Admin PIN (1234) กำหนดพิกัดออฟฟิศ และเริ่มลงทะเบียนพนักงาน</li>
+</ol>
+
+<hr>
+
+<!-- ================================ หมวดที่ 7 ================================ -->
+<h2 id="section-7">หมวดที่ 7: การแก้ไขปัญหาและคำถามที่พบบ่อย (Troubleshooting & FAQ)</h2>
+<table>
+    <tr>
+        <th style="width: 25%;">ปัญหาที่พบ</th>
+        <th style="width: 35%;">สาเหตุที่เป็นไปได้</th>
+        <th>วิธีการแก้ไข</th>
+    </tr>
+    <tr>
+        <td><strong>กล้องไม่ยอมเปิด / จอดำ</strong></td>
+        <td>เบราว์เซอร์ยังไม่ได้รับอนุญาตให้ใช้กล้อง หรือไม่ได้เข้าผ่าน HTTPS</td>
+        <td>• ตรวจสอบว่าเข้าด้วย URL https://<br>• กดรูปแม่กุญแจหน้า URL แล้วเลือก "อนุญาตการใช้กล้อง"</td>
+    </tr>
+    <tr>
+        <td><strong>เตือน "อยู่นอกพื้นที่"</strong></td>
+        <td>พิกัด GPS ผู้ใช้คลาดเคลื่อน หรืออยู่นอกรัศมี</td>
+        <td>• ตรวจสอบว่าเปิด Location Service ในมือถือแล้ว<br>• ให้ Admin เข้าหน้า config.html ขยายรัศมีเป็น 0.2 หรือ 0.5 กม.</td>
+    </tr>
+    <tr>
+        <td><strong>กล้องสแกนไม่ติด / ไม่ขึ้นชื่อ</strong></td>
+        <td>แสงสว่างไม่พอ หรือใบหน้าเอียงเกินไป</td>
+        <td>• ขยับเข้าหาบริเวณที่มีแสงสว่าง ส่องหน้าตรงกับกล้อง<br>• ให้ Admin ช่วยลงทะเบียนใบหน้าซ้ำในหน้า register.html</td>
+    </tr>
+    <tr>
+        <td><strong>ขึ้น "เชื่อมต่อ API ไม่ได้"</strong></td>
+        <td>URL ของ Google Apps Script ไม่ถูกต้อง หรือยังไม่ได้เปิดเป็น Anyone</td>
+        <td>• ตรวจสอบไฟล์ js/api-config.js<br>• ตรวจสอบใน Apps Script ว่าสิทธิ์ Access ตั้งเป็น Anyone แล้วหรือไม่</td>
+    </tr>
+</table>
+
+<hr>
+
+<p style="text-align: center; color: #64748b; font-size: 9.5pt; margin-top: 24pt;">
+    <em>— สิ้นสุดเอกสาร · ฝ่ายพัฒนาระบบเทคโนโลยีสารสนเทศ · QS Smart Development Team —</em>
+</p>
+
+<!-- ================================ JavaScript สคริปต์ค้นหา ================================ -->
+<script>
+let originalContent = null;
+
+function filterManual() {
+    const input = document.getElementById('manualSearchInput');
+    const query = input.value.trim();
+    const countLabel = document.getElementById('searchResultCount');
+
+    if (!originalContent) {
+        originalContent = document.body.innerHTML;
+    }
+
+    removeHighlights();
+
+    if (!query) {
+        countLabel.innerHTML = 'พิมพ์คำเพื่อค้นหาและไฮไลต์เนื้อหาแบบเรียลไทม์';
+        return;
+    }
+
+    highlightText(document.body, query);
+}
+
+function removeHighlights() {
+    const marks = document.querySelectorAll('mark.highlight');
+    marks.forEach(mark => {
+        const parent = mark.parentNode;
+        parent.replaceChild(document.createTextNode(mark.textContent), mark);
+        parent.normalize();
+    });
+}
+
+function highlightText(element, text) {
+    if (!text) return;
+    const regex = new RegExp(`(${escapeRegExp(text)})`, 'gi');
+    let matchCount = 0;
+
+    function walk(node) {
+        if (node.nodeType === 3) { // Text node
+            if (node.parentNode.tagName === 'SCRIPT' || 
+                node.parentNode.tagName === 'STYLE' || 
+                node.parentNode.id === 'manualSearchInput' ||
+                node.parentNode.classList.contains('no-print')) {
+                return;
+            }
+            const match = node.data.match(regex);
+            if (match) {
+                const span = document.createElement('span');
+                span.innerHTML = node.data.replace(regex, '<mark class="highlight">$1</mark>');
+                matchCount += match.length;
+                node.parentNode.replaceChild(span, node);
+            }
+        } else if (node.nodeType === 1 && node.childNodes) {
+            Array.from(node.childNodes).forEach(walk);
+        }
+    }
+
+    walk(element);
+    
+    const countLabel = document.getElementById('searchResultCount');
+    if (matchCount > 0) {
+        countLabel.innerHTML = `<span style="color: #2563eb; font-weight: bold;">พบ ${matchCount} จุด</span> ที่ตรงกับคำว่า "<strong>${escapeHtml(text)}</strong>"`;
+        const firstMark = document.querySelector('mark.highlight');
+        if (firstMark && text.length > 2) {
+            firstMark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    } else {
+        countLabel.innerHTML = `<span style="color: #dc2626;">ไม่พบข้อความ</span> ที่ตรงกับ "${escapeHtml(text)}"`;
+    }
+}
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+</script>
+
+</body>
+</html>

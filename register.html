@@ -323,7 +323,8 @@
 
   function verifyPin() {
     const input = document.getElementById('pinInput').value.trim();
-    if (input === adminPin || input === '1234' || input === '1122') {
+    const effectiveAdminPin = adminPin || '1234';
+    if (input === effectiveAdminPin) {
       document.getElementById('pinGate').style.display = 'none';
       document.getElementById('registerContent').style.display = 'block';
       sessionStorage.setItem('is_admin_authenticated', 'true');
@@ -398,18 +399,26 @@
     btnSave.innerHTML = '⏳ กำลังวิเคราะห์และบันทึกใบหน้า...';
     msgDiv.innerText = '';
 
-    const detection = await faceapi
-      .detectSingleFace(video)
+    const detections = await faceapi
+      .detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.50 }))
       .withFaceLandmarks()
-      .withFaceDescriptor();
+      .withFaceDescriptors();
 
-    if (!detection) {
-      alert('ไม่พบใบหน้า! กรุณามองกล้องในที่สว่างให้ชัดเจน');
+    if (!detections || detections.length === 0) {
+      alert('ไม่พบใบหน้า! กรุณามองตรงเข้ากล้องในที่สว่างให้ชัดเจน');
       btnSave.disabled = false;
       btnSave.innerHTML = '📸 ถ่ายภาพและบันทึกใบหน้า';
       return;
     }
 
+    if (detections.length > 1) {
+      alert(`⚠️ ตรวจพบใบหน้า ${detections.length} คนในกล้อง! กรุณาให้พนักงานอยู่หน้ากล้องเพียง 1 คนเท่านั้น เพื่อป้องกันการบันทึกใบหน้าผิดพลาด`);
+      btnSave.disabled = false;
+      btnSave.innerHTML = '📸 ถ่ายภาพและบันทึกใบหน้า';
+      return;
+    }
+
+    const detection = detections[0];
     const descriptorArray = Array.from(detection.descriptor);
 
     try {

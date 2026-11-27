@@ -1383,6 +1383,7 @@
   async function handleGpsSuccess(pos) {
     currentLat = pos.coords.latitude;
     currentLng = pos.coords.longitude;
+    const currentAccuracy = pos.coords.accuracy || 0;
 
     try {
       if (!currentTargetConfig) {
@@ -1420,7 +1421,11 @@
       if (distKm <= config.radius) {
         // --- 1. อยู่ในพื้นที่ที่กำหนด (อนุญาตให้ปลดล็อกกล้องและสแกนได้) ---
         isInsideAllowedArea = true;
-        gpsStatus.innerHTML = `<span style="color:#34d399">✅ 📍 อยู่ใน${compName} (ห่าง ${distM} ม. / รัศมี ${radiusM} ม.)</span>`;
+        let accHint = '';
+        if (currentAccuracy > 300) {
+          accHint = ` <span style="color:#fbbf24;font-size:0.8em;" title="สัญญาณจากเสาสัญญาณหรือ Wi-Fi">(⚠️ พิกัดหยาบ ±${currentAccuracy.toFixed(0)} ม.)</span>`;
+        }
+        gpsStatus.innerHTML = `<span style="color:#34d399">✅ 📍 อยู่ใน${compName} (ห่าง ${distM} ม. / รัศมี ${radiusM} ม.)</span>${accHint}`;
         gpsAlertBox.style.display = 'none';
         hideGpsLock();
         checkAndStartAutoScan();
@@ -2007,7 +2012,7 @@
     if (employeeScansToday.length === 0) {
       // First scan of day = Check-In
       resolvedType = 'เข้างาน (Check-In)';
-      typeBadge.innerText = '🟢 เข้างาน (ครั้งที่ 1 ของวัน)';
+      typeBadge.innerText = '🟢 เข้างาน (ครั้งที่ 1 ของวัน) ⇄';
       typeBadge.className = 'detected-type type-in-badge';
 
       const limitTotalMin = timeStringToMinutes(workStartTime, 8, 0);
@@ -2026,20 +2031,26 @@
     } else {
       // Subsequent scans = Check-Out
       resolvedType = 'ออกงาน (Check-Out)';
-      typeBadge.innerText = '🔴 ออกงาน (ครั้งที่ ' + (employeeScansToday.length + 1) + ' ของวัน)';
+      typeBadge.innerText = '🔴 ออกงาน (ครั้งที่ ' + (employeeScansToday.length + 1) + ' ของวัน) ⇄';
       typeBadge.className = 'detected-type type-out-badge';
 
       const otStartTotalMin = timeStringToMinutes(otStartTime, 17, 0);
 
-      if (currentTotalMin < otStartTotalMin) {
+      // รองรับการทำงานกะดึก/ข้ามเที่ยงคืน (Cross-Midnight OT Support: 00:00 - 05:59 น.)
+      let effectiveCheckoutMin = currentTotalMin;
+      if (currentHour < 6 && otStartTotalMin >= 720) {
+        effectiveCheckoutMin += 1440; // บวก 24 ชั่วโมงสำหรับเวลาข้ามเที่ยงคืน
+      }
+
+      if (effectiveCheckoutMin < otStartTotalMin) {
         // ออกก่อนเวลาที่กำหนด -> แจ้งเตือนสีเหลือง ผิดปกติ
-        const earlyDiff = otStartTotalMin - currentTotalMin;
+        const earlyDiff = otStartTotalMin - effectiveCheckoutMin;
         resolvedStatus = 'ออกก่อนกำหนด (' + formatDurationMinutes(earlyDiff) + ')';
         statusBadge.innerText = '⚠️ ' + resolvedStatus;
         statusBadge.style.color = '#fbbf24';
         resolvedOtHours = 0;
-      } else if (currentTotalMin > otStartTotalMin) {
-        const otDiffMinutes = currentTotalMin - otStartTotalMin;
+      } else if (effectiveCheckoutMin > otStartTotalMin) {
+        const otDiffMinutes = effectiveCheckoutMin - otStartTotalMin;
         const fullOtHours = Math.floor(otDiffMinutes / 60);
 
         if (fullOtHours >= 1) {
@@ -2063,7 +2074,36 @@
       }
     }
 
+    // ให้พนักงานสามารถแตะป้ายประเภทเพื่อสลับ เข้างาน / ออกงาน ได้ด้วยตนเอง
+    typeBadge.onclick = toggleAttendanceType;
+    typeBadge.title = 'แตะเพื่อสลับระหว่าง เข้างาน / ออกงาน';
+    typeBadge.style.cursor = 'pointer';
+
     confirmModal.style.display = 'flex';
+  }
+
+  function toggleAttendanceType() {
+    const typeBadge = document.getElementById('modalDetectedType');
+    const otBadge = document.getElementById('modalOtBadge');
+    const statusBadge = document.getElementById('modalStatusBadge');
+    if (resolvedType.includes('เข้างาน')) {
+      resolvedType = 'ออกงาน (Check-Out)';
+      typeBadge.innerText = '🔴 ออกงาน (เปลี่ยนโดยผู้ใช้) ⇄';
+      typeBadge.className = 'detected-type type-out-badge';
+      resolvedStatus = 'ออกงานปกติ';
+      statusBadge.innerText = 'ออกงานปกติ';
+      statusBadge.style.color = '#34d399';
+      if (otBadge) otBadge.style.display = 'none';
+    } else {
+      resolvedType = 'เข้างาน (Check-In)';
+      typeBadge.innerText = '🟢 เข้างาน (เปลี่ยนโดยผู้ใช้) ⇄';
+      typeBadge.className = 'detected-type type-in-badge';
+      resolvedStatus = 'ตรงเวลา';
+      statusBadge.innerText = 'ตรงเวลา';
+      statusBadge.style.color = '#34d399';
+      if (otBadge) otBadge.style.display = 'none';
+      resolvedOtHours = 0;
+    }
   }
 
   function confirmAttendance() {

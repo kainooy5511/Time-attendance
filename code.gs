@@ -169,7 +169,7 @@ function doPost(e) {
       data.adminPin
     );
   } else if (action === 'deleteAttendance') {
-    result = deleteAttendance(data.employeeId, data.date, data.time);
+    result = deleteAttendance(data.employeeId, data.date, data.time, data.adminPin);
   } else if (action === 'cleanEmptyRows') {
     result = cleanEmptyAttendanceRows();
   } else if (action === 'updateAttendance') {
@@ -180,7 +180,8 @@ function doPost(e) {
       data.newTime,
       data.newType,
       data.newStatus,
-      data.newOtHours
+      data.newOtHours,
+      data.adminPin
     );
   } else {
     result = { error: 'Unknown action: ' + action };
@@ -472,8 +473,14 @@ function getAttendance() {
   return list.reverse();
 }
 
-// ฟังก์ชันลบรายการลงเวลา (สำหรับ Admin)
-function deleteAttendance(employeeId, date, time) {
+// ฟังก์ชันลบรายการลงเวลา (สำหรับ Admin - ป้องกันการลบโดยไม่ได้รับอนุญาต)
+function deleteAttendance(employeeId, date, time, adminPin) {
+  const cfg = getConfig();
+  const effectivePin = (cfg && cfg.adminPin) ? String(cfg.adminPin).trim() : '1234';
+  if (String(adminPin || '').trim() !== effectivePin) {
+    return { success: false, error: 'Unauthorized: รหัสผ่าน Admin ไม่ถูกต้อง ปฏิเสธการลบข้อมูล' };
+  }
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Attendance');
   if (!sheet) return { success: false, error: 'Attendance sheet not found' };
@@ -501,8 +508,14 @@ function deleteAttendance(employeeId, date, time) {
   return { success: false, error: 'ไม่พบรายการที่ตรงกับเงื่อนไขในฐานข้อมูล' };
 }
 
-// ฟังก์ชันแก้ไขรายการลงเวลา (สำหรับ Admin)
-function updateAttendance(employeeId, date, originalTime, newTime, newType, newStatus, newOtHours) {
+// ฟังก์ชันแก้ไขรายการลงเวลา (สำหรับ Admin - ป้องกันการแก้ไขโดยไม่ได้รับอนุญาต)
+function updateAttendance(employeeId, date, originalTime, newTime, newType, newStatus, newOtHours, adminPin) {
+  const cfg = getConfig();
+  const effectivePin = (cfg && cfg.adminPin) ? String(cfg.adminPin).trim() : '1234';
+  if (String(adminPin || '').trim() !== effectivePin) {
+    return { success: false, error: 'Unauthorized: รหัสผ่าน Admin ไม่ถูกต้อง ปฏิเสธการแก้ไขข้อมูล' };
+  }
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Attendance');
   if (!sheet) return { success: false, error: 'Attendance sheet not found' };
