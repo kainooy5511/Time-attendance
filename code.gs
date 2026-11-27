@@ -270,8 +270,48 @@ function getKnownFaces() {
   return users;
 }
 
+// ฟังก์ชันคำนวณระยะห่างพิกัดภูมิศาสตร์ (Haversine Formula) บนเซิร์ฟเวอร์ หน่วยเป็นกิโลเมตร
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; // รัศมีโลกเฉลี่ย (km)
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // --- ส่วนบันทึกเวลาเข้า-ออกงาน (Attendance) ---
 function logAttendance(name, lat, lng, employeeId, department, type, status, otHours, photoBase64) {
+  // มาตรการป้องกันเด็ดขาด 1 (Server-Side Geofence Enforcement): ตรวจสอบรัศมี GPS จากเซิร์ฟเวอร์ ป้องกันการบายพาสทุกช่องทาง
+  const config = getConfig();
+  if (config && config.lat && config.lng && config.radius && Number(config.radius) > 0) {
+    const numLat = parseFloat(lat);
+    const numLng = parseFloat(lng);
+    const targetLat = parseFloat(config.lat);
+    const targetLng = parseFloat(config.lng);
+    const allowedRadiusKm = parseFloat(config.radius);
+
+    if (isNaN(numLat) || isNaN(numLng) || numLat === 0 || numLng === 0) {
+      return {
+        success: false,
+        error: '❌ ปฏิเสธการลงเวลา: ไม่พบพิกัด GPS จริงจากอุปกรณ์ ไม่อนุญาตให้ลงเวลาโดยไม่มีพิกัดตำแหน่ง'
+      };
+    }
+
+    const distKm = haversineKm(numLat, numLng, targetLat, targetLng);
+    if (distKm > allowedRadiusKm) {
+      const distM = (distKm * 1000).toFixed(0);
+      const maxM = (allowedRadiusKm * 1000).toFixed(0);
+      const displayDist = distKm < 1 ? distM + ' เมตร' : distKm.toFixed(2) + ' กม.';
+      return {
+        success: false,
+        error: '❌ ปฏิเสธการลงเวลา: คุณอยู่นอกพื้นที่ทำงานที่กำหนด (ห่าง ' + displayDist + ' / อนุญาตในรัศมีไม่เกิน ' + maxM + ' เมตร)'
+      };
+    }
+  }
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Attendance');
   if (!sheet) {
