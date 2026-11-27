@@ -113,10 +113,41 @@ app.post('/api/gas', (req, res) => {
       lat: parseFloat(data.lat) || 0,
       lng: parseFloat(data.lng) || 0,
       radius: parseFloat(data.radius) || 0,
-      workStartTime: data.workStartTime || '08:30'
+      workStartTime: data.workStartTime || '08:30',
+      otStartTime: data.otStartTime || '17:00',
+      adminPin: data.adminPin || '1234'
     };
     saveDb(db);
     return res.json({ success: true, message: 'บันทึกการตั้งค่าเรียบร้อย' });
+  } else if (action === 'updateAttendance') {
+    const effectivePin = (db.config && db.config.adminPin) ? String(db.config.adminPin).trim() : '1234';
+    if (String(data.adminPin || '').trim() !== effectivePin) {
+      return res.json({ success: false, error: 'Unauthorized: รหัสผ่าน Admin ไม่ถูกต้อง' });
+    }
+    const idx = (db.attendance || []).findIndex(r =>
+      (!data.employeeId || r.employeeId === data.employeeId) &&
+      (r.time === data.originalTime || r.time === data.newTime)
+    );
+    if (idx >= 0) {
+      if (data.newTime) db.attendance[idx].time = data.newTime;
+      if (data.newType) db.attendance[idx].type = data.newType;
+      if (data.newStatus) db.attendance[idx].status = data.newStatus;
+      if (data.newOtHours !== undefined) db.attendance[idx].otHours = data.newOtHours;
+      saveDb(db);
+      return res.json({ success: true, message: 'แก้ไขรายการสำเร็จ' });
+    }
+    return res.json({ success: false, error: 'ไม่พบรายการที่ต้องการแก้ไข' });
+  } else if (action === 'deleteAttendance') {
+    const effectivePin = (db.config && db.config.adminPin) ? String(db.config.adminPin).trim() : '1234';
+    if (String(data.adminPin || '').trim() !== effectivePin) {
+      return res.json({ success: false, error: 'Unauthorized: รหัสผ่าน Admin ไม่ถูกต้อง' });
+    }
+    const beforeLen = (db.attendance || []).length;
+    db.attendance = (db.attendance || []).filter(r =>
+      !((!data.employeeId || r.employeeId === data.employeeId) && r.time === data.time)
+    );
+    saveDb(db);
+    return res.json({ success: true, message: 'ลบรายการสำเร็จ' });
   } else {
     return res.json({ error: 'Unknown action: ' + action });
   }
