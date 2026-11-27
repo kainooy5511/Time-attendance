@@ -1191,7 +1191,8 @@
     if (!newTime) return alert('กรุณาระบุเวลา');
 
     // ตรวจสอบความปลอดภัย: ต้องใส่รหัสผ่าน Admin ยืนยันทุกครั้ง
-    if (adminPinConfirm !== adminMasterPin && adminPinConfirm !== '1234' && adminPinConfirm !== '1122') {
+    const effectiveAdminPin = adminMasterPin || '1234';
+    if (adminPinConfirm !== effectiveAdminPin) {
       alert('❌ รหัสผ่าน Admin ไม่ถูกต้อง! ระบบไม่อนุญาตให้แก้ไขข้อมูลการลงเวลา');
       return;
     }
@@ -1875,7 +1876,7 @@
       </div>
       <div>
         <label style="font-size:0.82em; font-weight:700; color:#dc2626; display:block; margin-bottom:5px;">🔑 ยืนยันรหัสผ่าน Admin เพื่อบันทึกการแก้ไข</label>
-        <input type="password" id="editAdminPinConfirm" maxlength="8" placeholder="กรอกรหัส Admin (เช่น 1122 หรือ 1234)" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:10px; border:1px solid #dc2626; background:#fff; color:#dc2626; font-weight:700; font-size:1em;">
+        <input type="password" id="editAdminPinConfirm" maxlength="8" placeholder="กรอกรหัส Admin เพื่อยืนยัน" style="width:100%; box-sizing:border-box; padding:9px 12px; border-radius:10px; border:1px solid #dc2626; background:#fff; color:#dc2626; font-weight:700; font-size:1em;">
       </div>
       <div style="display:flex; gap:10px; margin-top:10px;">
         <button onclick="closeEditLogModal()" style="flex:1; padding:10px; border-radius:12px; border:1px solid var(--card-border); background:#f1f5f9; color:var(--text-muted); font-weight:700; cursor:pointer;">ยกเลิก</button>
